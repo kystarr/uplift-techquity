@@ -16,7 +16,7 @@ export const Navigation = () => {
               onClick={() => navigate("/")}
               className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent hover:opacity-80 transition-smooth"
             >
-              CommunityConnect
+              Uplift
             </button>
             
             <div className="hidden md:flex items-center gap-6">
