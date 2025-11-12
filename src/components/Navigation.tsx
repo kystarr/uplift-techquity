@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Search, Heart, User } from "lucide-react";
+import { Menu, Search, Heart, User, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
@@ -51,10 +51,16 @@ export const Navigation = () => {
               <Heart className="h-5 w-5" />
             </Button>
             <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate("/messages")}
+            >
+              <MessageCircle className="h-5 w-5" />
+            </Button>
+            <Button 
               variant="default"
               onClick={() => navigate("/auth")}
             >
-              <User className="h-4 w-4" />
               Sign In
             </Button>
           </div>
@@ -88,6 +94,15 @@ export const Navigation = () => {
               className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-md transition-smooth"
             >
               Favorites
+            </button>
+            <button 
+              onClick={() => {
+                navigate("/messages");
+                setMobileMenuOpen(false);
+              }}
+              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-md transition-smooth"
+            >
+              Messages
             </button>
             <Button 
               variant="default"
