@@ -14,7 +14,7 @@ export const Navigation = () => {
           <div className="flex items-center gap-8">
             <button 
               onClick={() => navigate("/")}
-              className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent hover:opacity-80 transition-smooth"
+              className="text-xl font-bold text-primary hover:opacity-80 transition-smooth"
             >
               Uplift
             </button>

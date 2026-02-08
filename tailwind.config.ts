@@ -19,6 +19,7 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        surface: "hsl(var(--surface))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -53,6 +54,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        /* defaultHeading: neutral dark — default for all headings */
+        defaultHeading: "hsl(var(--default-heading))",
+        /* accentHeading: purple — emphasis headings, featured labels, highlight text only */
+        accentHeading: "hsl(var(--accent-heading))",
+        headingAccent: "hsl(var(--heading-accent))",
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
