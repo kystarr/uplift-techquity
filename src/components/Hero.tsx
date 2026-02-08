@@ -11,12 +11,12 @@ export const Hero = () => {
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-4xl mx-auto text-center space-y-8">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
             Empowering Communities Through
-            <span className="block mt-2 text-secondary">Minority-Owned Businesses</span>
+            <span className="block mt-2 text-defaultHeading">Minority-Owned Businesses</span>
           </h1>
           
-          <p className="text-lg sm:text-xl text-primary-foreground/90 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
             Discover, support, and connect with trusted Black-owned and minority-owned businesses in your community. Building economic equity, one connection at a time.
           </p>
 
@@ -34,7 +34,7 @@ export const Hero = () => {
               variant="outline" 
               size="lg"
               onClick={() => navigate("/auth")}
-              className="w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+              className="w-full sm:w-auto border-border text-foreground hover:bg-muted"
             >
               Register Your Business
             </Button>
@@ -42,16 +42,16 @@ export const Hero = () => {
 
           <div className="grid grid-cols-3 gap-8 pt-12 max-w-2xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-bold text-secondary">1000+</div>
-              <div className="text-sm text-primary-foreground/80">Verified Businesses</div>
+              <div className="text-3xl font-bold text-defaultHeading">1000+</div>
+              <div className="text-sm text-muted-foreground">Verified Businesses</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-secondary">50K+</div>
-              <div className="text-sm text-primary-foreground/80">Community Members</div>
+              <div className="text-3xl font-bold text-defaultHeading">50K+</div>
+              <div className="text-sm text-muted-foreground">Community Members</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-secondary">4.8★</div>
-              <div className="text-sm text-primary-foreground/80">Average Rating</div>
+              <div className="text-3xl font-bold text-defaultHeading">4.8★</div>
+              <div className="text-sm text-muted-foreground">Average Rating</div>
             </div>
           </div>
         </div>

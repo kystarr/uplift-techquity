@@ -44,7 +44,7 @@ export const FeaturesSection = () => {
                 key={index}
                 className="bg-card rounded-lg p-6 shadow-md hover:shadow-xl transition-smooth border border-border"
               >
-                <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center mb-4">
+                <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center mb-4">
                   <Icon className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">

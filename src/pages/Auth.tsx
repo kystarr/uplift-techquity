@@ -93,15 +93,15 @@ const Auth = () => {
             </TabsContent>
           </Tabs>
 
-          <Card className="mt-6 bg-gradient-primary border-0">
+          <Card className="mt-6">
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-primary-foreground mb-2">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 Business Owner?
               </h3>
-              <p className="text-primary-foreground/90 text-sm mb-4">
+              <p className="text-muted-foreground text-sm mb-4">
                 Register your minority-owned business and reach customers who want to support you.
               </p>
-              <Button variant="outline" className="w-full border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+              <Button variant="outline" className="w-full border-border text-foreground hover:bg-muted">
                 Register Your Business
               </Button>
             </CardContent>
