@@ -11,6 +11,7 @@ import type { LoginFormValues, SignUpFormValues } from "@/lib/validations/auth";
 
 // 1. Added confirmSignUp to imports
 import { signIn, signUp, confirmSignUp } from 'aws-amplify/auth';
+import { verifyCustomRoleInToken, logTokenClaims } from '@/lib/auth-utils';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -31,6 +32,24 @@ const Auth = () => {
       });
 
       if (isSignedIn) {
+        // BE-1.3: Verify custom:role is in ID token (critical for Sprint 2)
+        const tokenCheck = await verifyCustomRoleInToken();
+        
+        if (!tokenCheck.hasCustomRole) {
+          console.warn('⚠️ BE-1.3: custom:role NOT found in ID token!');
+          console.warn('This needs to be fixed in Cognito App Client settings.');
+          toast({
+            variant: "destructive",
+            title: "Token Verification Warning",
+            description: "custom:role not found in token. Check Cognito app client settings.",
+          });
+        } else {
+          console.log('✅ BE-1.3: custom:role verified in token:', tokenCheck.role);
+        }
+        
+        // Log full token claims for debugging (remove in production)
+        await logTokenClaims();
+
         toast({
           title: "Welcome back!",
           description: "You're signed in.",
