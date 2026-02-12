@@ -54,7 +54,13 @@ const Auth = () => {
           title: "Welcome back!",
           description: "You're signed in.",
         });
-        navigate("/");
+        
+        // Small delay to ensure auth state propagates before navigation
+        setTimeout(() => {
+          navigate("/");
+          // Force a page refresh to ensure Navigation component updates
+          window.dispatchEvent(new Event('authstatechange'));
+        }, 100);
       }
     } catch (error: any) {
       toast({

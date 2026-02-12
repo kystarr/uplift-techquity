@@ -1,17 +1,42 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Search, Heart, User, MessageCircle, LogOut } from "lucide-react"; // Added LogOut icon
+import { Menu, Search, Heart, User, MessageCircle, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-
-// 1. Import the hook
-import { useAuthenticator } from '@aws-amplify/ui-react';
+import { useState, useEffect } from "react";
+import { useAuthenticator } from "@aws-amplify/ui-react";
+import { getCurrentUser } from "aws-amplify/auth";
 
 export const Navigation = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // 2. Access the user state and signOut method
-  const { user, signOut } = useAuthenticator((context) => [context.user]);
+  // Subscribe to auth state changes from Authenticator
+  const { user, signOut } = useAuthenticator((context) => [
+    context.user,
+    context.route,
+  ]);
+
+  // Check auth state directly from Amplify (works with direct signIn calls)
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await getCurrentUser();
+        setIsAuthenticated(true);
+      } catch {
+        setIsAuthenticated(false);
+      }
+    };
+    
+    checkAuth();
+    
+    // Listen for custom auth state change events
+    const handleAuthChange = () => checkAuth();
+    window.addEventListener('authstatechange', handleAuthChange);
+    
+    return () => {
+      window.removeEventListener('authstatechange', handleAuthChange);
+    };
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
@@ -25,7 +50,7 @@ export const Navigation = () => {
             </Button>
             
             {/* 3. Wrap protected buttons in a user check if you want them hidden when logged out */}
-            {user && (
+            {(user || isAuthenticated) && (
               <>
                 <Button variant="ghost" size="icon" onClick={() => navigate("/favorites")}>
                   <Heart className="h-5 w-5" />
@@ -37,12 +62,19 @@ export const Navigation = () => {
             )}
 
             {/* 4. The Dynamic Auth Button */}
-            {user ? (
+            {(user || isAuthenticated) ? (
               <Button 
                 variant="outline"
                 className="gap-2"
-                onClick={() => {
-                  signOut();
+                onClick={async () => {
+                  try {
+                    await signOut();
+                  } catch (err) {
+                    // Fallback: sign out directly via Amplify
+                    const { signOut: amplifySignOut } = await import('aws-amplify/auth');
+                    await amplifySignOut();
+                  }
+                  setIsAuthenticated(false);
                   navigate("/");
                 }}
               >
@@ -67,12 +99,19 @@ export const Navigation = () => {
           <div className="md:hidden py-4 space-y-3 border-t border-border">
             {/* ... other mobile links ... */}
             
-            {user ? (
+            {(user || isAuthenticated) ? (
               <Button 
                 variant="outline"
                 className="w-full gap-2"
-                onClick={() => {
-                  signOut();
+                onClick={async () => {
+                  try {
+                    await signOut();
+                  } catch (err) {
+                    // Fallback: sign out directly via Amplify
+                    const { signOut: amplifySignOut } = await import('aws-amplify/auth');
+                    await amplifySignOut();
+                  }
+                  setIsAuthenticated(false);
                   setMobileMenuOpen(false);
                   navigate("/");
                 }}
