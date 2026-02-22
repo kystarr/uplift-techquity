@@ -8,7 +8,10 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backend:configure-profile": "ampx configure profile",
+    "backend:sandbox": "ampx sandbox",
+    "backend:sandbox:once": "ampx sandbox --once"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.14.0",

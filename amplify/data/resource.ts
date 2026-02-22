@@ -28,6 +28,24 @@ const schema = a
     Todo: a.model({ content: a.string() }).authorization((allow) => [
       allow.owner(), // Users can CRUD their own todos
     ]),
+    Business: a
+      .model({
+        businessName: a.string().required(),
+        legalBusinessName: a.string(),
+        businessType: a.string(),
+        contactName: a.string().required(),
+        contactEmail: a.string().required(),
+        phone: a.string(),
+        website: a.url(),
+        description: a.string(),
+        verificationDocumentKey: a.string(),
+        verificationStatus: a.string().required(), // PENDING | UNDER_REVIEW | APPROVED | REJECTED
+        verificationSubmittedAt: a.datetime(),
+      })
+      .authorization((allow) => [
+        allow.owner().to(['create', 'read', 'update']),
+        // When ADMIN groups are enabled, allow.group('ADMIN').to(['read', 'update']),
+      ]),
   })
   .authorization((allow) => [
     // Grant Post Confirmation Lambda IAM access to create User records
