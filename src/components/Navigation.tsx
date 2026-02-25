@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Search, Heart, User, MessageCircle, LogOut } from "lucide-react"; // Added LogOut icon
+import { Menu, Search, Heart, User, MessageCircle, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Navigation = () => {
@@ -21,7 +20,7 @@ export const Navigation = () => {
               <Search className="h-5 w-5" />
             </Button>
             
-            {/* 3. Wrap protected buttons in a user check if you want them hidden when logged out */}
+            {/* Show protected buttons only when logged in */}
             {user && (
               <>
                 <Button variant="ghost" size="icon" onClick={() => navigate("/favorites")}>
@@ -38,8 +37,8 @@ export const Navigation = () => {
               <Button 
                 variant="outline"
                 className="gap-2"
-                onClick={() => {
-                  signOut();
+                onClick={async () => {
+                  await signOut();
                   navigate("/");
                 }}
               >
@@ -68,8 +67,8 @@ export const Navigation = () => {
               <Button 
                 variant="outline"
                 className="w-full gap-2"
-                onClick={() => {
-                  signOut();
+                onClick={async () => {
+                  await signOut();
                   setMobileMenuOpen(false);
                   navigate("/");
                 }}
