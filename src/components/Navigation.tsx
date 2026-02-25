@@ -15,7 +15,7 @@ export const Navigation = () => {
         <div className="flex items-center justify-between h-16">
           {/* ... Left Side (Logo & Discover) remains the same ... */}
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3 ml-auto">
             <Button variant="ghost" size="icon" onClick={() => navigate("/search")}>
               <Search className="h-5 w-5" />
             </Button>
