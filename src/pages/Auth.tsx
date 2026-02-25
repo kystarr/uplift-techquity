@@ -57,7 +57,7 @@ const Auth = () => {
         options: {
           userAttributes: {
             email: values.email,
-            name: values.name,
+            name: `${values.firstName} ${values.lastName}`.trim(),
             "custom:role": "CUSTOMER",
           },
         },

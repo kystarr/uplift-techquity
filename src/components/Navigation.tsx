@@ -3,15 +3,12 @@ import { Menu, Search, Heart, User, MessageCircle, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-// 1. Import the hook
-import { useAuthenticator } from '@aws-amplify/ui-react';
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Navigation = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // 2. Access the user state and signOut method
-  const { user, signOut } = useAuthenticator((context) => [context.user]);
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
