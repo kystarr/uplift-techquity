@@ -60,7 +60,16 @@ const RegisterBusiness = () => {
           />
         )}
         {currentStep === 3 && (
-          <Step3_Confirmation onBack={goBack} />
+          <Step3_Confirmation
+            step1Data={step1Data}
+            step2Files={step2Files}
+            onBack={goBack}
+            onSubmit={async () => {
+              // Placeholder: replace with real API call later
+              await new Promise((r) => setTimeout(r, 800));
+              navigate("/");
+            }}
+          />
         )}
       </main>
     </div>
