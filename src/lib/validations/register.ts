@@ -5,6 +5,14 @@ export const step1BusinessInfoSchema = z.object({
     .string()
     .min(1, "Business name is required")
     .min(2, "Business name must be at least 2 characters"),
+  ownerName: z
+    .string()
+    .min(1, "Business owner name is required")
+    .min(2, "Owner name must be at least 2 characters"),
+  email: z
+    .string()
+    .min(1, "Business email is required")
+    .email("Please enter a valid email"),
   category: z.string().min(1, "Please select a category"),
   street: z.string().min(1, "Street address is required"),
   city: z.string().min(1, "City is required"),

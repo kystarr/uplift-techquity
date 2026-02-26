@@ -53,6 +53,8 @@ export const Step1_BusinessInfo = ({
     resolver: zodResolver(step1BusinessInfoSchema),
     defaultValues: {
       businessName: "",
+      ownerName: "",
+      email: "",
       category: "",
       street: "",
       city: "",
@@ -95,6 +97,43 @@ export const Step1_BusinessInfo = ({
                   <Input
                     placeholder="Your business name"
                     autoComplete="organization"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="ownerName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Business owner name *</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Full name of owner"
+                    autoComplete="name"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Business email *</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    autoComplete="email"
                     {...field}
                   />
                 </FormControl>
