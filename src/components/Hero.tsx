@@ -33,7 +33,7 @@ export const Hero = () => {
             <Button 
               variant="outline" 
               size="lg"
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/register/1")}
               className="w-full sm:w-auto border-border text-foreground hover:bg-muted"
             >
               Register Your Business
