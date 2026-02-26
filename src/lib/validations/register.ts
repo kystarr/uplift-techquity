@@ -34,3 +34,31 @@ export const step1BusinessInfoSchema = z.object({
 });
 
 export type Step1BusinessInfoValues = z.infer<typeof step1BusinessInfoSchema>;
+
+// Step 2: Document upload validation
+export const DOCUMENT_UPLOAD = {
+  maxFileSizeBytes: 5 * 1024 * 1024, // 5MB
+  maxFiles: 5,
+  acceptedTypes: [
+    "application/pdf",
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+  ] as const,
+  acceptedExtensions: [".pdf", ".jpg", ".jpeg", ".png", ".webp"],
+} as const;
+
+export function validateDocumentFile(file: File): { valid: boolean; error?: string } {
+  if (file.size > DOCUMENT_UPLOAD.maxFileSizeBytes) {
+    return { valid: false, error: `File must be under ${DOCUMENT_UPLOAD.maxFileSizeBytes / 1024 / 1024}MB` };
+  }
+  const type = file.type?.toLowerCase();
+  const isAccepted = DOCUMENT_UPLOAD.acceptedTypes.some(
+    (t) => t === type || (type === "image/jpeg" && t === "image/jpg")
+  );
+  if (!isAccepted) {
+    return { valid: false, error: "File must be PDF, JPG, PNG, or WebP" };
+  }
+  return { valid: true };
+}

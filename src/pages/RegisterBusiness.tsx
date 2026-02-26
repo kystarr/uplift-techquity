@@ -16,6 +16,7 @@ const RegisterBusiness = () => {
   const navigate = useNavigate();
   const currentStep = Math.min(Math.max(1, parseInt(step ?? "1", 10) || 1), TOTAL_STEPS);
   const [step1Data, setStep1Data] = useState<Step1BusinessInfoValues | null>(null);
+  const [step2Files, setStep2Files] = useState<File[]>([]);
 
   const goNext = () => {
     if (currentStep < TOTAL_STEPS) {
@@ -51,7 +52,12 @@ const RegisterBusiness = () => {
           />
         )}
         {currentStep === 2 && (
-          <Step2_DocumentUpload onNext={goNext} onBack={goBack} />
+          <Step2_DocumentUpload
+            defaultFiles={step2Files}
+            onNext={goNext}
+            onBack={goBack}
+            onStep2Complete={setStep2Files}
+          />
         )}
         {currentStep === 3 && (
           <Step3_Confirmation onBack={goBack} />
