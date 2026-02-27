@@ -53,7 +53,8 @@ export const Step1_BusinessInfo = ({
     resolver: zodResolver(step1BusinessInfoSchema),
     defaultValues: {
       businessName: "",
-      ownerName: "",
+      ownerFirstName: "",
+      ownerLastName: "",
       email: "",
       category: "",
       street: "",
@@ -92,10 +93,10 @@ export const Step1_BusinessInfo = ({
             name="businessName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Business name *</FormLabel>
+                <FormLabel>Business Name *</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Your business name"
+                    placeholder="Your Business Name"
                     autoComplete="organization"
                     {...field}
                   />
@@ -105,30 +106,49 @@ export const Step1_BusinessInfo = ({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="ownerName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Business owner name *</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Full name of owner"
-                    autoComplete="name"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="ownerFirstName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Owner Name *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="First Name"
+                      autoComplete="given-name"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ownerLastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="invisible sm:visible">{"\u00A0"}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Last Name"
+                      autoComplete="family-name"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Business email *</FormLabel>
+                <FormLabel>Business E-mail *</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
@@ -172,7 +192,7 @@ export const Step1_BusinessInfo = ({
             name="street"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Street address *</FormLabel>
+                <FormLabel>Street Address *</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="123 Main St"
@@ -225,7 +245,7 @@ export const Step1_BusinessInfo = ({
               name="zip"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ZIP code *</FormLabel>
+                  <FormLabel>ZIP Code *</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="12345"
@@ -244,7 +264,7 @@ export const Step1_BusinessInfo = ({
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone number *</FormLabel>
+                <FormLabel>Phone Number *</FormLabel>
                 <FormControl>
                   <Input
                     type="tel"
@@ -282,7 +302,7 @@ export const Step1_BusinessInfo = ({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Short description (optional, max 500 characters)</FormLabel>
+                <FormLabel>Short Description (optional, max 500 characters)</FormLabel>
                 <FormControl>
                   <Textarea
                     placeholder="Tell customers what your business offers..."
