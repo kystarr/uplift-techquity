@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Heart } from "lucide-react";
@@ -18,6 +19,7 @@ interface BusinessCardProps {
 }
 
 export const BusinessCard = ({
+  id,
   name,
   category,
   rating,
@@ -31,7 +33,8 @@ export const BusinessCard = ({
   const [isFavorite, setIsFavorite] = useState(false);
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-smooth group cursor-pointer">
+    <Link to={`/business/${id}`} className="block">
+      <Card className="overflow-hidden hover:shadow-lg transition-smooth group cursor-pointer">
       <div className="relative h-48 overflow-hidden">
         <img 
           src={image} 
@@ -90,5 +93,6 @@ export const BusinessCard = ({
         </div>
       </CardContent>
     </Card>
+    </Link>
   );
 };

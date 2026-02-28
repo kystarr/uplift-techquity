@@ -12,6 +12,7 @@ import Favorites from "./pages/Favorites";
 import MessagesInbox from "./pages/MessagesInbox";
 import Messages from "./pages/Messages";
 import RegisterBusiness from "./pages/RegisterBusiness";
+import BusinessProfilePage from "./pages/BusinessProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/messages/:businessId" element={<Messages />} />
           <Route path="/register" element={<Navigate to="/register/1" replace />} />
           <Route path="/register/:step" element={<RegisterBusiness />} />
+          <Route path="/business/:id" element={<BusinessProfilePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
