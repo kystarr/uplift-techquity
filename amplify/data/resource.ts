@@ -30,14 +30,25 @@ const schema = a
     ]),
     Business: a
       .model({
+        // Core identity and ownership
         businessName: a.string().required(),
         legalBusinessName: a.string(),
         businessType: a.string(),
         contactName: a.string().required(),
         contactEmail: a.string().required(),
+        ownerId: a.string(),
+
+        // Public profile fields
         phone: a.string(),
         website: a.url(),
         description: a.string(),
+        images: a.string().array(),
+        tags: a.string().array(),
+        categories: a.string().array(),
+        averageRating: a.float(),
+        verified: a.boolean(),
+
+        // Verification + review workflow
         verificationDocumentKey: a.string(),
         verificationStatus: a.string().required(), // PENDING | UNDER_REVIEW | APPROVED | REJECTED
         verificationSubmittedAt: a.datetime(),

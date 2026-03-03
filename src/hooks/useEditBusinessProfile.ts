@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { getApiUrl } from "@/lib/api";
+import { amplifyDataClient } from "@/amplifyDataClient";
 import type { Business, BusinessUpdatePayload } from "@/types/business";
 import {
   validateBusinessForm,
@@ -118,21 +118,38 @@ export function useEditBusinessProfile({
     };
 
     try {
-      const url = getApiUrl(`/api/business/${businessId}`);
-      const res = await fetch(url, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const { data, errors } = await amplifyDataClient.models.Business.update({
+        id: businessId,
+        businessName: payload.name,
+        description: payload.description || undefined,
+        contactEmail: payload.email,
+        phone: payload.phone,
+        website: payload.website,
+        tags: payload.tags,
+        categories: payload.categories,
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          (body as { message?: string }).message ?? `Save failed (${res.status})`
-        );
+      if (errors && errors.length > 0) {
+        throw new Error(errors.map((e) => e.message).join(", "));
       }
 
-      const updated = (await res.json()) as Business;
+      if (!data) {
+        throw new Error("Save failed");
+      }
+
+      const updated: Business = {
+        id: data.id,
+        name: data.businessName,
+        description: data.description ?? "",
+        email: data.contactEmail ?? undefined,
+        phone: data.phone ?? undefined,
+        website: data.website ?? undefined,
+        images: data.images ?? [],
+        isVerified: data.verified ?? false,
+        tags: data.tags ?? [],
+        categories: data.categories ?? [],
+        averageRating: typeof data.averageRating === "number" ? data.averageRating : 0,
+      };
 
       // Optimistic UI: parent can show updated data immediately
       onSuccess?.(updated);
