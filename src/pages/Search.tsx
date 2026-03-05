@@ -1,4 +1,4 @@
-import { BusinessCard } from "@/components/BusinessCard";
+import { BusinessSummaryCard } from "@/components/search";
 import { Container, PageHeader } from "@/components/shared";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -108,7 +108,17 @@ const Search = () => {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {mockBusinesses.map((business) => (
-          <BusinessCard key={business.id} {...business} />
+          <BusinessSummaryCard
+            key={business.id}
+            name={business.name}
+            category={business.category}
+            rating={business.rating}
+            reviewCount={business.reviewCount}
+            distance={business.distance}
+            image={business.image}
+            tags={business.tags}
+            verified={business.verified}
+          />
         ))}
       </div>
     </Container>
