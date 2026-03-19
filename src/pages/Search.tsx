@@ -1,5 +1,5 @@
-import { Navigation } from "@/components/Navigation";
-import { BusinessCard } from "@/components/BusinessCard";
+import { BusinessSummaryCard } from "@/components/search";
+import { Container, PageHeader } from "@/components/shared";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search as SearchIcon, SlidersHorizontal } from "lucide-react";
@@ -82,40 +82,46 @@ const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Discover Local Businesses</h1>
-            <p className="text-muted-foreground">Find and support minority-owned businesses in your community</p>
-          </div>
+    <Container maxWidth="7xl" className="space-y-8">
+      <PageHeader
+        title="Discover Local Businesses"
+        description="Find and support minority-owned businesses in your community"
+        actions={
+          <Button variant="outline" size="lg">
+            <SlidersHorizontal className="h-5 w-5" />
+            Filters
+          </Button>
+        }
+      />
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, service, or keyword..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12"
-              />
-            </div>
-            <Button variant="outline" size="lg">
-              <SlidersHorizontal className="h-5 w-5" />
-              Filters
-            </Button>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockBusinesses.map((business) => (
-              <BusinessCard key={business.id} {...business} />
-            ))}
-          </div>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 relative">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, service, or keyword..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-12"
+          />
         </div>
       </div>
-    </div>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {mockBusinesses.map((business) => (
+          <BusinessSummaryCard
+            key={business.id}
+            name={business.name}
+            category={business.category}
+            rating={business.rating}
+            reviewCount={business.reviewCount}
+            distance={business.distance}
+            image={business.image}
+            tags={business.tags}
+            verified={business.verified}
+          />
+        ))}
+      </div>
+    </Container>
   );
 };
 

@@ -1,0 +1,4 @@
+type Todo @model @auth(rules: [{allow: owner, ownerField: "owner"}])
+{
+  content: String
+}
