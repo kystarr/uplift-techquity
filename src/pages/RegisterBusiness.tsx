@@ -8,12 +8,15 @@ import {
   Step3_Confirmation,
 } from "@/components/register";
 import type { Step1BusinessInfoValues } from "@/lib/validations/register";
+import { useAuth } from "@/contexts/AuthContext";
+import { createBusinessFromRegistration } from "@/lib/business-registration";
 
 const TOTAL_STEPS = 3;
 
 const RegisterBusiness = () => {
   const { step } = useParams<{ step: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const currentStep = Math.min(Math.max(1, parseInt(step ?? "1", 10) || 1), TOTAL_STEPS);
   const [step1Data, setStep1Data] = useState<Step1BusinessInfoValues | null>(null);
   const [step2Files, setStep2Files] = useState<File[]>([]);
@@ -65,8 +68,21 @@ const RegisterBusiness = () => {
             step2Files={step2Files}
             onBack={goBack}
             onSubmit={async () => {
-              // Placeholder: replace with real API call later
-              await new Promise((r) => setTimeout(r, 800));
+              if (!user) {
+                throw new Error("You must be signed in to register a business.");
+              }
+              if (!step1Data) {
+                throw new Error("Missing business information from Step 1.");
+              }
+
+              // Create Business record in Amplify Data backend and upload
+              // any Step 2 verification documents to S3.
+              await createBusinessFromRegistration({
+                step1: step1Data,
+                ownerId: user.userId,
+                documents: step2Files,
+              });
+
               navigate("/");
             }}
           />

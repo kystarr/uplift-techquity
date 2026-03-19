@@ -7,6 +7,16 @@ import { Search as SearchIcon, SlidersHorizontal } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useBusinessSearch } from "@/hooks/useBusinessSearch";
 
+/**
+ * Discover / Search page.
+ *
+ * Data source: Amplify Gen 2 Business table (live, no mock data).
+ * Filter: only businesses where verificationStatus === "APPROVED" are shown.
+ *         This is enforced inside useBusinessSearch.
+ *
+ * The search input filters the already-loaded APPROVED list client-side
+ * by name, category, or tags — no re-fetch needed per keystroke.
+ */
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { businesses, loading, error, refetch } = useBusinessSearch();

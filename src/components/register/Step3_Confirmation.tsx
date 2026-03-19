@@ -70,8 +70,18 @@ export const Step3_Confirmation = ({
             {step1Data ? (
               <dl className="grid gap-3 text-sm">
                 <div>
-                  <dt className="text-muted-foreground">Business name</dt>
+                  <dt className="text-muted-foreground">Business Name</dt>
                   <dd className="font-medium text-foreground">{step1Data.businessName}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Business Owner</dt>
+                  <dd className="font-medium text-foreground">
+                    {step1Data.ownerFirstName} {step1Data.ownerLastName}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Email</dt>
+                  <dd className="font-medium text-foreground">{step1Data.email}</dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Category</dt>

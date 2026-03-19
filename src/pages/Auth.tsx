@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Container } from "@/components/shared";
 import { LoginForm, SignUpForm } from "@/components/auth";
 import type { LoginFormValues, SignUpFormValues } from "@/lib/validations/auth";
+import { Navigation } from "@/components/Navigation";
 
 // 1. Added confirmSignUp to imports
 import { signIn, signUp, confirmSignUp } from 'aws-amplify/auth';
@@ -135,8 +136,10 @@ const Auth = () => {
   };
 
   return (
-    <Container maxWidth="md" padding="lg">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <Container maxWidth="md" padding="lg">
+        <div className="max-w-md mx-auto">
         {/* 5. Conditional Rendering: Show confirmation UI if needed, else show Tabs */}
         {needsConfirmation ? (
           <Card className="animate-in fade-in zoom-in duration-300">
@@ -220,8 +223,9 @@ const Auth = () => {
             </Button>
           </CardContent>
         </Card>
-      </div>
-    </Container>
+        </div>
+      </Container>
+    </div>
   );
 };
 

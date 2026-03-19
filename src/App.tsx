@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { FaviconSync } from "@/components/FaviconSync";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
@@ -12,6 +13,7 @@ import Favorites from "./pages/Favorites";
 import MessagesInbox from "./pages/MessagesInbox";
 import Messages from "./pages/Messages";
 import RegisterBusiness from "./pages/RegisterBusiness";
+import BusinessProfilePage from "./pages/BusinessProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +25,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <FaviconSync />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<Search />} />
@@ -33,6 +36,7 @@ const App = () => (
           <Route path="/messages/:businessId" element={<Messages />} />
           <Route path="/register" element={<Navigate to="/register/1" replace />} />
           <Route path="/register/:step" element={<RegisterBusiness />} />
+          <Route path="/business/:id" element={<BusinessProfilePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
