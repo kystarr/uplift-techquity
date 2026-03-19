@@ -11,6 +11,8 @@ export interface Business {
   website?: string;
   images: string[];
   isVerified: boolean;
+  /** Mirrors verificationStatus on the backend: PENDING | APPROVED | UNDER_REVIEW | REJECTED */
+  verificationStatus?: string;
   tags: string[];
   categories: string[];
   averageRating: number;

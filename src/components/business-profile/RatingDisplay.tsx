@@ -50,8 +50,8 @@ const RatingDisplayComponent = ({
             key={i}
             className={cn(
               starClass,
-              i < fullStars && "fill-secondary text-secondary",
-              i === fullStars && hasHalf && "fill-secondary/50 text-secondary",
+              i < fullStars && "fill-yellow-500 text-yellow-500",
+              i === fullStars && hasHalf && "fill-yellow-500/50 text-yellow-500/50",
               i > fullStars && !(i === fullStars && hasHalf) && "text-muted fill-muted/30"
             )}
             aria-hidden

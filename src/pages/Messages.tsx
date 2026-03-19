@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Navigation } from "@/components/Navigation";
 
 interface Message {
   id: string;
@@ -96,7 +97,8 @@ const Messages = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
+      <Navigation />
       {/* Header with Business Info */}
       <div className="border-b border-border bg-card">
         <div className="container max-w-4xl mx-auto px-4 py-4">
@@ -133,9 +135,9 @@ const Messages = () => {
                     <span className="font-medium">{business.rating}</span>
                     <span>({business.reviewCount})</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" />
-                    <span>{business.distance}</span>
+                  <div className="flex items-center gap-1 text-primary">
+                    <MapPin className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-primary">{business.distance}</span>
                   </div>
                 </div>
               </div>

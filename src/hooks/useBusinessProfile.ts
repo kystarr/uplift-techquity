@@ -26,15 +26,16 @@ export function useBusinessProfile(businessId: string | undefined): UseBusinessP
     return {
       id: b.id,
       name: b.businessName,
-      description: b.description ?? "",
+      description: b.description ?? '',
       email: b.contactEmail ?? undefined,
       phone: b.phone ?? undefined,
       website: b.website ?? undefined,
       images: b.images ?? [],
       isVerified: b.verified ?? false,
+      verificationStatus: b.verificationStatus ?? 'PENDING',
       tags: b.tags ?? [],
       categories: b.categories ?? [],
-      averageRating: typeof b.averageRating === "number" ? b.averageRating : 0,
+      averageRating: typeof b.averageRating === 'number' ? b.averageRating : 0,
     };
   }, []);
 
@@ -43,19 +44,43 @@ export function useBusinessProfile(businessId: string | undefined): UseBusinessP
       setLoading(true);
       setError(null);
       try {
-        const { data, errors } = await amplifyDataClient.models.Business.get({ id });
+        // Prefer IAM/identity-pool access since your Business public rule is
+        // currently configured with provider: "iam" in amplify_outputs.json.
+        // Fallback to apiKey for environments that expose apiKey public rules.
+        let data: BackendBusiness | null | undefined;
+        let errors: Array<{ message: string }> | undefined;
+
+        try {
+          const res = await amplifyDataClient.models.Business.get({ id }, { authMode: 'iam' } as any);
+          data = res.data;
+          errors = res.errors as Array<{ message: string }> | undefined;
+        } catch {
+          const res = await amplifyDataClient.models.Business.get(
+            { id },
+            { authMode: 'apiKey' } as any
+          );
+          data = res.data;
+          errors = res.errors as Array<{ message: string }> | undefined;
+        }
 
         if (errors && errors.length > 0) {
-          throw new Error(errors.map((e) => e.message).join(", "));
+          throw new Error(errors.map((e) => e.message).join(', '));
         }
 
         if (!data) {
-          throw new Error("Business not found");
+          throw new Error('Business not found');
+        }
+
+        // Guard: only render APPROVED businesses publicly.
+        // This prevents unapproved/pending businesses from being accessible
+        // via direct URL even if auth rules allow the read.
+        if (data.verificationStatus !== 'APPROVED') {
+          throw new Error('Business not found');
         }
 
         setBusiness(mapBackendToUi(data));
       } catch (e) {
-        setError(e instanceof Error ? e : new Error("Failed to load business"));
+        setError(e instanceof Error ? e : new Error('Failed to load business'));
         setBusiness(null);
       } finally {
         setLoading(false);

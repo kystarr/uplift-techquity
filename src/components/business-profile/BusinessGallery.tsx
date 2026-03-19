@@ -30,13 +30,13 @@ const BusinessGalleryComponent = ({
         {images.map((src, index) => (
           <figure
             key={`${src}-${index}`}
-            className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted"
+              className="relative w-full rounded-lg overflow-hidden bg-muted col-span-1 sm:col-span-2 lg:col-span-3"
             role="listitem"
           >
             <img
               src={src}
               alt={`${altPrefix} photo ${index + 1} of ${images.length}`}
-              className="w-full h-full object-cover"
+                className="w-full h-auto object-cover"
               loading={index === 0 ? "eager" : "lazy"}
             />
           </figure>

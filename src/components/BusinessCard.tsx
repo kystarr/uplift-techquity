@@ -74,13 +74,13 @@ export const BusinessCard = ({
 
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-secondary text-secondary" />
+            <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
             <span className="font-medium text-foreground">{rating.toFixed(1)}</span>
             <span className="text-muted-foreground">({reviewCount})</span>
           </div>
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span>{distance}</span>
+          <div className="flex items-center gap-1 text-primary">
+            <MapPin className="h-4 w-4 text-primary" />
+            <span className="text-primary">{distance}</span>
           </div>
         </div>
 

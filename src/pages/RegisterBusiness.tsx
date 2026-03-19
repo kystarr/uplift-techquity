@@ -75,11 +75,12 @@ const RegisterBusiness = () => {
                 throw new Error("Missing business information from Step 1.");
               }
 
-              // Create Business record in Amplify Data backend.
-              // Documents from Step 2 will be wired to storage in a later step.
+              // Create Business record in Amplify Data backend and upload
+              // any Step 2 verification documents to S3.
               await createBusinessFromRegistration({
                 step1: step1Data,
                 ownerId: user.userId,
+                documents: step2Files,
               });
 
               navigate("/");

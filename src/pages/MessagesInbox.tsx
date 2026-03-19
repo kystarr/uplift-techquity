@@ -161,9 +161,9 @@ const MessagesInbox = () => {
                           <Star className="h-3 w-3 fill-secondary text-secondary" />
                           <span>{conversation.businessRating}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          <span>{conversation.businessDistance}</span>
+                        <div className="flex items-center gap-1 text-primary">
+                          <MapPin className="h-3 w-3 text-primary" />
+                          <span className="text-primary">{conversation.businessDistance}</span>
                         </div>
                       </div>
 
