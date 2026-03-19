@@ -1,11 +1,11 @@
-import { BusinessCard } from '@/components/BusinessCard';
-import { Container, PageHeader } from '@/components/shared';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
-import { useState, useMemo } from 'react';
-import { useBusinessSearch } from '@/hooks/useBusinessSearch';
-import { Navigation } from '@/components/Navigation';
+import { BusinessSummaryCard } from "@/components/search";
+import { Navigation } from "@/components/Navigation";
+import { Container, PageHeader } from "@/components/shared";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search as SearchIcon, SlidersHorizontal } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useBusinessSearch } from "@/hooks/useBusinessSearch";
 
 /**
  * Discover / Search page.
@@ -18,10 +18,9 @@ import { Navigation } from '@/components/Navigation';
  * by name, category, or tags — no re-fetch needed per keystroke.
  */
 const Search = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const { businesses, loading, error, refetch } = useBusinessSearch();
 
-  // Client-side text filter over the approved list
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return businesses;
     const q = searchQuery.toLowerCase();
@@ -88,7 +87,9 @@ const Search = () => {
         {!loading && !error && filtered.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-sm">
-              {searchQuery ? 'No businesses match your search.' : 'No businesses found.'}
+              {searchQuery
+                ? "No businesses match your search."
+                : "No businesses found."}
             </p>
           </div>
         )}
@@ -97,18 +98,13 @@ const Search = () => {
         {!loading && !error && filtered.length > 0 && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
             {filtered.map((business) => (
-              <BusinessCard
+              <BusinessSummaryCard
                 key={business.id}
-                id={business.id}
                 name={business.name}
                 category={business.category}
                 rating={business.rating}
                 reviewCount={0}
-                distance=""
-                image={
-                  business.image ??
-                  'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=300&fit=crop'
-                }
+                image={business.image}
                 tags={business.tags}
                 verified={business.verified}
               />
