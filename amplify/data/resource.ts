@@ -81,6 +81,8 @@ const schema = a.schema({
     businessImage: a.string(),
     businessRating: a.float(),
     businessVerified: a.boolean(),
+    businessLatitude: a.float(),
+    businessLongitude: a.float(),
   }).authorization((allow) => [
     allow.owner(),
   ]),
