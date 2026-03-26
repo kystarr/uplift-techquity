@@ -173,7 +173,7 @@ const Search = () => {
                 name={business.name}
                 category={business.category}
                 rating={business.rating}
-                reviewCount={0}
+                reviewCount={business.reviewCount}
                 distance={getDistanceLabel(business.latitude, business.longitude)}
                 image={
                   business.image ??

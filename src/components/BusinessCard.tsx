@@ -9,7 +9,7 @@ interface BusinessCardProps {
   name: string;
   category: string;
   rating: number;
-  reviewCount: number;
+  reviewCount?: number;
   distance: string;
   image: string;
   tags: string[];
@@ -89,7 +89,9 @@ export const BusinessCard = ({
           <div className="flex items-center gap-1">
             <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
             <span className="font-medium text-foreground">{rating.toFixed(1)}</span>
-            <span className="text-muted-foreground">({reviewCount})</span>
+            {reviewCount !== undefined && (
+              <span className="text-muted-foreground">({reviewCount})</span>
+            )}
           </div>
           {distance && (
             <div className="flex items-center gap-1 text-primary">
