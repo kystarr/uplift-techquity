@@ -14,6 +14,10 @@ export interface BusinessSearchResult {
     verified: boolean;
     /** First image URL, if any */
     image?: string;
+    city?: string;
+    state?: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export interface UseBusinessSearchResult {
@@ -85,6 +89,10 @@ export function useBusinessSearch(): UseBusinessSearchResult {
                     image: Array.isArray(b.images) && b.images.length > 0
                         ? b.images[0]
                         : undefined,
+                    city: b.city ?? undefined,
+                    state: b.state ?? undefined,
+                    latitude: typeof b.latitude === 'number' ? b.latitude : undefined,
+                    longitude: typeof b.longitude === 'number' ? b.longitude : undefined,
                 }));
 
             setBusinesses(approved);
