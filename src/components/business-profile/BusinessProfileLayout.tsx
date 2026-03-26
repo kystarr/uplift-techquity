@@ -26,7 +26,7 @@ export interface BusinessProfileLayoutProps extends React.HTMLAttributes<HTMLDiv
   reviewsPreview?: ReviewPreviewItem[];
   reviewCount?: number;
   /** Called when a user submits a review */
-  onSubmitReview?: (params: { businessId: string; rating: number; text: string }) => Promise<void>;
+  onSubmitReview?: (params: { businessId: string; rating: number; text: string; authorName: string }) => Promise<void>;
   submittingReview?: boolean;
   /** Back link href (e.g. /search). If not set, breadcrumb still shows Search > Business name */
   backHref?: string;

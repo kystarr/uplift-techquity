@@ -8,7 +8,7 @@ export interface UseReviewsResult {
   loading: boolean;
   submitting: boolean;
   error: Error | null;
-  submitReview: (params: { businessId: string; rating: number; text: string }) => Promise<void>;
+  submitReview: (params: { businessId: string; rating: number; text: string; authorName?: string }) => Promise<void>;
   refetch: () => void;
 }
 
@@ -78,11 +78,11 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
   }, [fetchReviews]);
 
   const submitReview = useCallback(
-    async ({ businessId: bid, rating, text }: { businessId: string; rating: number; text: string }) => {
+    async ({ businessId: bid, rating, text, authorName: suppliedName }: { businessId: string; rating: number; text: string; authorName?: string }) => {
       setSubmitting(true);
       try {
         const cognitoUser = await getCurrentUser();
-        const authorName = cognitoUser.username;
+        const authorName = suppliedName ?? cognitoUser.username;
         const authorId = cognitoUser.userId;
 
         await (amplifyDataClient.models as any).Review.create(
