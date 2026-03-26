@@ -1,9 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 
 interface BusinessCardProps {
   id: string;
@@ -16,6 +15,10 @@ interface BusinessCardProps {
   tags: string[];
   verified: boolean;
   familyFriendly?: boolean;
+  /** Controlled favorite state; if omitted the heart button redirects to /auth */
+  isFavorite?: boolean;
+  /** Called with businessId when the heart is toggled */
+  onToggleFavorite?: (id: string) => void;
 }
 
 export const BusinessCard = ({
@@ -29,8 +32,20 @@ export const BusinessCard = ({
   tags,
   verified,
   familyFriendly,
+  isFavorite,
+  onToggleFavorite,
 }: BusinessCardProps) => {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const navigate = useNavigate();
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(id);
+    } else {
+      navigate('/auth');
+    }
+  };
 
   return (
     <Link to={`/business/${id}`} className="block">
@@ -47,7 +62,7 @@ export const BusinessCard = ({
           </Badge>
         )}
         {familyFriendly && (
-          <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground">
+          <Badge className="absolute top-3 right-12 bg-secondary text-secondary-foreground">
             Family Friendly
           </Badge>
         )}
@@ -55,10 +70,8 @@ export const BusinessCard = ({
           variant="ghost"
           size="icon"
           className="absolute top-3 right-3 bg-card/80 hover:bg-card"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsFavorite(!isFavorite);
-          }}
+          onClick={handleHeartClick}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart className={`h-5 w-5 ${isFavorite ? 'fill-destructive text-destructive' : ''}`} />
         </Button>
@@ -78,10 +91,12 @@ export const BusinessCard = ({
             <span className="font-medium text-foreground">{rating.toFixed(1)}</span>
             <span className="text-muted-foreground">({reviewCount})</span>
           </div>
-          <div className="flex items-center gap-1 text-primary">
-            <MapPin className="h-4 w-4 text-primary" />
-            <span className="text-primary">{distance}</span>
-          </div>
+          {distance && (
+            <div className="flex items-center gap-1 text-primary">
+              <MapPin className="h-4 w-4 text-primary" />
+              <span className="text-primary">{distance}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
