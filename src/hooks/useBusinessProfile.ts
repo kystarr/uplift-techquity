@@ -36,6 +36,10 @@ export function useBusinessProfile(businessId: string | undefined): UseBusinessP
       tags: b.tags ?? [],
       categories: b.categories ?? [],
       averageRating: typeof b.averageRating === 'number' ? b.averageRating : 0,
+      street: b.street ?? undefined,
+      city: b.city ?? undefined,
+      state: b.state ?? undefined,
+      zip: b.zip ?? undefined,
     };
   }, []);
 

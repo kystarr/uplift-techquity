@@ -58,6 +58,10 @@ const BusinessProfileLayoutComponent = ({
     tags,
     categories,
     averageRating,
+    street,
+    city,
+    state,
+    zip,
   } = business;
 
   return (
@@ -138,7 +142,7 @@ const BusinessProfileLayoutComponent = ({
           )}
         </div>
         <div>
-          <BusinessContactCard email={email} phone={phone} website={website} />
+          <BusinessContactCard email={email} phone={phone} website={website} street={street} city={city} state={state} zip={zip} />
         </div>
       </div>
       <div id="reviews-section" aria-hidden="true" />

@@ -17,6 +17,10 @@ export interface Business {
   categories: string[];
   averageRating: number;
   reviewCount?: number;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
 }
 
 /** @deprecated Use Business.reviewCount directly */
