@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
+import { fetchUserAttributes } from "aws-amplify/auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,10 +17,20 @@ export interface ReviewFormProps {
   onSubmit: (params: { businessId: string; rating: number; text: string; authorName: string }) => Promise<void>;
 }
 
+/** Format "Hannah Gollner" → "Hannah G." */
+function formatDisplayName(fullName: string | undefined): string {
+  if (!fullName) return '';
+  const parts = fullName.trim().split(/\s+/);
+  const first = parts[0] ?? '';
+  const lastInitial = parts.length > 1 ? ` ${parts[parts.length - 1][0].toUpperCase()}.` : '';
+  return `${first}${lastInitial}`;
+}
+
 /**
  * Auth-gated review form. Shows a "sign in" prompt for guests.
- * Authenticated users get an interactive star selector, textarea, and an
- * optional "post anonymously" checkbox.
+ * Authenticated users see a star selector, comment field, and a
+ * "Include my name" checkbox (checked by default). When checked their
+ * name appears as "First L."; when unchecked it shows "Anonymous Customer".
  */
 export function ReviewForm({ businessId, submitting = false, onSubmit }: ReviewFormProps) {
   const { user } = useAuth();
@@ -27,7 +38,15 @@ export function ReviewForm({ businessId, submitting = false, onSubmit }: ReviewF
   const [hovered, setHovered] = React.useState(0);
   const [selected, setSelected] = React.useState(0);
   const [text, setText] = React.useState('');
-  const [anonymous, setAnonymous] = React.useState(false);
+  const [includeName, setIncludeName] = React.useState(true);
+  const [formattedName, setFormattedName] = React.useState('');
+
+  React.useEffect(() => {
+    if (!user) return;
+    fetchUserAttributes()
+      .then((attrs) => setFormattedName(formatDisplayName(attrs.name)))
+      .catch(() => setFormattedName(''));
+  }, [user]);
 
   if (!user) {
     return (
@@ -44,7 +63,8 @@ export function ReviewForm({ businessId, submitting = false, onSubmit }: ReviewF
     );
   }
 
-  const displayName = anonymous ? 'Anonymous' : (user.signInDetails?.loginId?.split('@')[0] ?? user.username);
+  const displayName = includeName && formattedName ? formattedName : 'Anonymous Customer';
+  const authorName = includeName && formattedName ? formattedName : 'Anonymous Customer';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,12 +73,12 @@ export function ReviewForm({ businessId, submitting = false, onSubmit }: ReviewF
       return;
     }
     try {
-      await onSubmit({ businessId, rating: selected, text: text.trim(), authorName: anonymous ? 'Anonymous' : user.username });
+      await onSubmit({ businessId, rating: selected, text: text.trim(), authorName });
       toast({ title: "Review submitted!", description: "Thanks for your feedback." });
       setSelected(0);
       setHovered(0);
       setText('');
-      setAnonymous(false);
+      setIncludeName(true);
     } catch {
       toast({ title: "Failed to submit review.", description: "Please try again.", variant: "destructive" });
     }
@@ -114,12 +134,12 @@ export function ReviewForm({ businessId, submitting = false, onSubmit }: ReviewF
 
           <div className="flex items-center gap-2">
             <Checkbox
-              id="anonymous-review"
-              checked={anonymous}
-              onCheckedChange={(checked) => setAnonymous(checked === true)}
+              id="include-name"
+              checked={includeName}
+              onCheckedChange={(checked) => setIncludeName(checked === true)}
             />
-            <Label htmlFor="anonymous-review" className="text-sm font-normal cursor-pointer">
-              Post anonymously
+            <Label htmlFor="include-name" className="text-sm font-normal cursor-pointer">
+              Include my name
             </Label>
           </div>
 
