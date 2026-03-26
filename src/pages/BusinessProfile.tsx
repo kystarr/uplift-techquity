@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useBusinessProfile } from "@/hooks/useBusinessProfile";
+import { useReviews } from "@/hooks/useReviews";
 import { BusinessProfileLayout } from "@/components/business-profile/BusinessProfileLayout";
 import { BusinessProfileSkeleton } from "@/components/business-profile/BusinessProfileSkeleton";
 import { ErrorState } from "@/components/shared";
@@ -13,6 +14,7 @@ import { Navigation } from "@/components/Navigation";
 export default function BusinessProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { business, loading, error, refetch } = useBusinessProfile(id);
+  const { reviews, submitting, submitReview } = useReviews(id);
 
   if (loading) {
     return (
@@ -50,8 +52,10 @@ export default function BusinessProfilePage() {
       <Navigation />
       <BusinessProfileLayout
         business={business}
-        reviewCount={0}
-        reviewsPreview={[]}
+        reviewCount={reviews.length}
+        reviewsPreview={reviews.slice(0, 3)}
+        onSubmitReview={submitReview}
+        submittingReview={submitting}
         backHref="/search"
       />
     </div>

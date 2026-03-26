@@ -1,12 +1,16 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Phone, Globe } from "lucide-react";
+import { Mail, Phone, Globe, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface BusinessContactCardProps extends React.HTMLAttributes<HTMLDivElement> {
   email?: string;
   phone?: string;
   website?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
 }
 
 const ContactRow = ({
@@ -50,10 +54,18 @@ const BusinessContactCardComponent = ({
   email,
   phone,
   website,
+  street,
+  city,
+  state,
+  zip,
   className,
   ...props
 }: BusinessContactCardProps) => {
-  const hasAny = email || phone || website;
+  const addressLine = [street, city && state ? `${city}, ${state}` : city ?? state, zip]
+    .filter(Boolean)
+    .join(' • ');
+
+  const hasAny = email || phone || website || addressLine;
   if (!hasAny) return null;
 
   return (
@@ -62,6 +74,13 @@ const BusinessContactCardComponent = ({
         <CardTitle className="text-lg">Contact</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {addressLine && (
+          <ContactRow
+            icon={MapPin}
+            label="Address"
+            value={[street, city && state ? `${city}, ${state} ${zip ?? ''}`.trim() : ''].filter(Boolean).join('\n')}
+          />
+        )}
         {email && (
           <ContactRow icon={Mail} label="Email" value={email} href={`mailto:${email}`} />
         )}

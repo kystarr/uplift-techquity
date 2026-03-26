@@ -16,9 +16,14 @@ export interface Business {
   tags: string[];
   categories: string[];
   averageRating: number;
+  reviewCount?: number;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
 }
 
-/** Optional review count for display (e.g. "4.9 (234 reviews)") */
+/** @deprecated Use Business.reviewCount directly */
 export interface BusinessWithReviewCount extends Business {
   reviewCount?: number;
 }

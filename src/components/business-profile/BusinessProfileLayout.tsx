@@ -15,6 +15,7 @@ import { BusinessHeader } from "./BusinessHeader";
 import { BusinessContactCard } from "./BusinessContactCard";
 import { BusinessGallery } from "./BusinessGallery";
 import { ReviewsPreview } from "./ReviewsPreview";
+import { ReviewForm } from "./ReviewForm";
 import type { Business } from "@/types/business";
 import type { ReviewPreviewItem } from "./ReviewsPreview";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,9 @@ export interface BusinessProfileLayoutProps extends React.HTMLAttributes<HTMLDiv
   /** Optional review preview data (from same or separate API) */
   reviewsPreview?: ReviewPreviewItem[];
   reviewCount?: number;
+  /** Called when a user submits a review */
+  onSubmitReview?: (params: { businessId: string; rating: number; text: string; authorName: string }) => Promise<void>;
+  submittingReview?: boolean;
   /** Back link href (e.g. /search). If not set, breadcrumb still shows Search > Business name */
   backHref?: string;
 }
@@ -37,6 +41,8 @@ const BusinessProfileLayoutComponent = ({
   business,
   reviewsPreview = [],
   reviewCount = 0,
+  onSubmitReview,
+  submittingReview = false,
   backHref = "/search",
   className,
   ...props
@@ -52,6 +58,10 @@ const BusinessProfileLayoutComponent = ({
     tags,
     categories,
     averageRating,
+    street,
+    city,
+    state,
+    zip,
   } = business;
 
   return (
@@ -121,9 +131,18 @@ const BusinessProfileLayoutComponent = ({
               onViewAll={() => document.getElementById("reviews-section")?.scrollIntoView?.({ behavior: "smooth" })}
             />
           </section>
+          {onSubmitReview && (
+            <section aria-label="Write a review">
+              <ReviewForm
+                businessId={business.id}
+                submitting={submittingReview}
+                onSubmit={onSubmitReview}
+              />
+            </section>
+          )}
         </div>
         <div>
-          <BusinessContactCard email={email} phone={phone} website={website} />
+          <BusinessContactCard email={email} phone={phone} website={website} street={street} city={city} state={state} zip={zip} />
         </div>
       </div>
       <div id="reviews-section" aria-hidden="true" />

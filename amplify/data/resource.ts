@@ -47,6 +47,9 @@ const schema = a.schema({
 
     // Stats & Verification
     averageRating: a.float(),
+    reviewCount: a.integer(),
+    latitude: a.float(),
+    longitude: a.float(),
     verified: a.boolean(),
     verificationDocumentKey: a.string(),
     verificationStatus: a.string().required(), // PENDING | APPROVED | UNDER_REVIEW | REJECTED
@@ -58,6 +61,30 @@ const schema = a.schema({
     allow.guest().to(['create', 'read']),
     // Allow authenticated principals (incl. IAM-authenticated callers) for seeding/backend writes
     allow.authenticated().to(['create', 'read', 'update']),
+  ]),
+  Review: a.model({
+    businessId: a.string().required(),
+    authorId: a.string().required(),
+    authorName: a.string().required(),
+    rating: a.float().required(),
+    text: a.string(),
+  }).authorization((allow) => [
+    allow.owner().to(['create', 'read', 'delete']),
+    allow.authenticated().to(['read']),
+    allow.guest().to(['read']),
+  ]),
+
+  Favorite: a.model({
+    businessId: a.string().required(),
+    businessName: a.string(),
+    businessCategory: a.string(),
+    businessImage: a.string(),
+    businessRating: a.float(),
+    businessVerified: a.boolean(),
+    businessLatitude: a.float(),
+    businessLongitude: a.float(),
+  }).authorization((allow) => [
+    allow.owner(),
   ]),
 }).authorization((allow) => [
   allow.resource(postConfirmation).to(['mutate']),
