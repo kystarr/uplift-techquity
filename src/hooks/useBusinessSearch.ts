@@ -49,24 +49,29 @@ export function useBusinessSearch(): UseBusinessSearchResult {
         setLoading(true);
         setError(null);
         try {
-            // Prefer IAM/identity-pool guest auth because Business public access
-            // is currently configured with provider: "iam" in amplify_outputs.json.
-            // Fallback to apiKey for environments that expose API key public rules.
+            // Auth mode priority:
+            //   1. userPool  — works for signed-in users (Business has allow.authenticated())
+            //   2. iam       — works for guests (Business has allow.guest() via IAM)
+            //   3. apiKey    — final fallback
             let data: any[] | undefined;
             let errors: Array<{ message: string }> | undefined;
 
-            try {
-                const res = await amplifyDataClient.models.Business.list({
-                    authMode: 'iam',
-                });
-                data = res.data;
-                errors = res.errors as Array<{ message: string }> | undefined;
-            } catch {
-                const res = await amplifyDataClient.models.Business.list({
-                    authMode: 'apiKey',
-                });
-                data = res.data;
-                errors = res.errors as Array<{ message: string }> | undefined;
+            const authModes = ['userPool', 'iam', 'apiKey'] as const;
+            let lastError: unknown;
+
+            for (const authMode of authModes) {
+                try {
+                    const res = await amplifyDataClient.models.Business.list({ authMode });
+                    data = res.data;
+                    errors = res.errors as Array<{ message: string }> | undefined;
+                    break; // success — stop trying
+                } catch (e) {
+                    lastError = e;
+                }
+            }
+
+            if (data === undefined) {
+                throw lastError ?? new Error('All auth modes failed');
             }
 
             if (errors && errors.length > 0) {

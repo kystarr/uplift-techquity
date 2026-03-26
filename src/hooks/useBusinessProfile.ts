@@ -44,23 +44,24 @@ export function useBusinessProfile(businessId: string | undefined): UseBusinessP
       setLoading(true);
       setError(null);
       try {
-        // Prefer IAM/identity-pool access since your Business public rule is
-        // currently configured with provider: "iam" in amplify_outputs.json.
-        // Fallback to apiKey for environments that expose apiKey public rules.
+        // Auth mode priority: userPool (signed-in) → iam (guest) → apiKey (fallback)
         let data: BackendBusiness | null | undefined;
         let errors: Array<{ message: string }> | undefined;
+        let lastError: unknown;
 
-        try {
-          const res = await amplifyDataClient.models.Business.get({ id }, { authMode: 'iam' } as any);
-          data = res.data;
-          errors = res.errors as Array<{ message: string }> | undefined;
-        } catch {
-          const res = await amplifyDataClient.models.Business.get(
-            { id },
-            { authMode: 'apiKey' } as any
-          );
-          data = res.data;
-          errors = res.errors as Array<{ message: string }> | undefined;
+        for (const authMode of ['userPool', 'iam', 'apiKey'] as const) {
+          try {
+            const res = await amplifyDataClient.models.Business.get({ id }, { authMode } as any);
+            data = res.data;
+            errors = res.errors as Array<{ message: string }> | undefined;
+            break;
+          } catch (e) {
+            lastError = e;
+          }
+        }
+
+        if (data === undefined) {
+          throw lastError ?? new Error('All auth modes failed');
         }
 
         if (errors && errors.length > 0) {

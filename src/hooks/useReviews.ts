@@ -34,19 +34,19 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
     setLoading(true);
     setError(null);
     try {
-      // Try IAM first, fall back to apiKey for guest-readable access
+      // Auth mode priority: userPool (signed-in) → iam (guest) → apiKey (fallback)
       let data: any[] | undefined;
-      try {
-        const res = await (amplifyDataClient.models as any).Review.list({
-          authMode: 'iam',
-        });
-        data = res.data;
-      } catch {
-        const res = await (amplifyDataClient.models as any).Review.list({
-          authMode: 'apiKey',
-        });
-        data = res.data;
+      let lastErr: unknown;
+      for (const authMode of ['userPool', 'iam', 'apiKey'] as const) {
+        try {
+          const res = await (amplifyDataClient.models as any).Review.list({ authMode });
+          data = res.data;
+          break;
+        } catch (e) {
+          lastErr = e;
+        }
       }
+      if (data === undefined) throw lastErr ?? new Error('All auth modes failed');
 
       const forBusiness = (data ?? [])
         .filter((r: any) => r.businessId === businessId)
@@ -92,12 +92,12 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
 
         // Re-fetch all reviews for this business to recalculate stats
         let allData: any[] | undefined;
-        try {
-          const res = await (amplifyDataClient.models as any).Review.list({ authMode: 'userPool' });
-          allData = res.data;
-        } catch {
-          const res = await (amplifyDataClient.models as any).Review.list({ authMode: 'apiKey' });
-          allData = res.data;
+        for (const authMode of ['userPool', 'iam', 'apiKey'] as const) {
+          try {
+            const res = await (amplifyDataClient.models as any).Review.list({ authMode });
+            allData = res.data;
+            break;
+          } catch { /* try next */ }
         }
 
         const businessReviews = (allData ?? []).filter((r: any) => r.businessId === bid);
