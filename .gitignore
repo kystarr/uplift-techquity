@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Amplify sandbox build artifacts (auto-generated, environment-specific)
+.amplify/artifacts/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
