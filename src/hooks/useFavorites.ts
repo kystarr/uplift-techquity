@@ -11,6 +11,8 @@ export interface FavoriteBusinessSnapshot {
   businessImage: string;
   businessRating: number;
   businessVerified: boolean;
+  businessLatitude?: number;
+  businessLongitude?: number;
 }
 
 export interface UseFavoritesResult {
@@ -26,6 +28,8 @@ export interface UseFavoritesResult {
     image: string;
     rating: number;
     verified: boolean;
+    latitude?: number;
+    longitude?: number;
   }) => Promise<void>;
 }
 
@@ -58,6 +62,8 @@ export function useFavorites(): UseFavoritesResult {
           businessImage: f.businessImage ?? '',
           businessRating: typeof f.businessRating === 'number' ? f.businessRating : 0,
           businessVerified: f.businessVerified ?? false,
+          businessLatitude: typeof f.businessLatitude === 'number' ? f.businessLatitude : undefined,
+          businessLongitude: typeof f.businessLongitude === 'number' ? f.businessLongitude : undefined,
         }))
       );
     } catch {
@@ -72,15 +78,8 @@ export function useFavorites(): UseFavoritesResult {
     fetchFavorites();
   }, [fetchFavorites]);
 
-  const toggleFavorite = useCallback(
-    async (business: {
-      id: string;
-      name: string;
-      category: string;
-      image: string;
-      rating: number;
-      verified: boolean;
-    }) => {
+  const toggleFavorite = useCallback<UseFavoritesResult['toggleFavorite']>(
+    async (business) => {
       if (!isAuthenticated) return;
 
       const existing = favorites.find((f) => f.businessId === business.id);
@@ -102,6 +101,8 @@ export function useFavorites(): UseFavoritesResult {
             businessImage: business.image,
             businessRating: business.rating,
             businessVerified: business.verified,
+            businessLatitude: business.latitude,
+            businessLongitude: business.longitude,
           },
           { authMode: 'userPool' }
         );
@@ -116,6 +117,8 @@ export function useFavorites(): UseFavoritesResult {
               businessImage: business.image,
               businessRating: business.rating,
               businessVerified: business.verified,
+              businessLatitude: business.latitude,
+              businessLongitude: business.longitude,
             },
           ]);
         }
@@ -126,5 +129,5 @@ export function useFavorites(): UseFavoritesResult {
 
   const favoriteIds = new Set(favorites.map((f) => f.businessId));
 
-  return { favoriteIds, favorites, loading, toggleFavorite };
+  return { favoriteIds, favorites, loading, toggleFavorite } satisfies UseFavoritesResult;
 }

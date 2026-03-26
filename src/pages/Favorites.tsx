@@ -6,11 +6,13 @@ import { Navigation } from "@/components/Navigation";
 import { BusinessCard } from "@/components/BusinessCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useUserLocation, haversineDistanceMiles } from "@/hooks/useUserLocation";
 
 const Favorites = () => {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { favorites, loading, toggleFavorite } = useFavorites();
+  const { coords, hasLocation } = useUserLocation();
 
   // Redirect guests to auth
   useEffect(() => {
@@ -19,17 +21,24 @@ const Favorites = () => {
     }
   }, [user, authLoading, navigate]);
 
+  const getDistanceLabel = (lat?: number, lon?: number): string => {
+    if (!hasLocation || lat == null || lon == null || !coords) return '';
+    const miles = haversineDistanceMiles(coords.latitude, coords.longitude, lat, lon);
+    return miles < 0.1 ? '< 0.1 mi' : `${miles.toFixed(1)} mi`;
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
-        <Container maxWidth="7xl" className="space-y-8">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        <Container maxWidth="7xl">
+          <div className="mt-8 mb-6">
+            <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-64 bg-muted rounded animate-pulse mt-2" />
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-lg border border-border bg-card h-72 animate-pulse"
-              />
+              <div key={i} className="rounded-lg border border-border bg-card h-72 animate-pulse" />
             ))}
           </div>
         </Container>
@@ -40,8 +49,8 @@ const Favorites = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <Container maxWidth="7xl" className="space-y-8">
-        <div className="mt-8">
+      <Container maxWidth="7xl">
+        <div className="mt-8 mb-8">
           <h1 className="text-3xl font-bold text-foreground">Your Favorites</h1>
           <p className="text-muted-foreground mt-1">
             Businesses you've saved for later
@@ -72,7 +81,7 @@ const Favorites = () => {
                 category={fav.businessCategory}
                 rating={fav.businessRating}
                 reviewCount={0}
-                distance=""
+                distance={getDistanceLabel(fav.businessLatitude, fav.businessLongitude)}
                 image={
                   fav.businessImage ||
                   'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=300&fit=crop'
@@ -88,6 +97,8 @@ const Favorites = () => {
                     image: fav.businessImage,
                     rating: fav.businessRating,
                     verified: fav.businessVerified,
+                    latitude: fav.businessLatitude,
+                    longitude: fav.businessLongitude,
                   })
                 }
               />
