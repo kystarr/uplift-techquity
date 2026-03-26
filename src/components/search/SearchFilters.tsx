@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Star, X, MapPin, Loader2 } from "lucide-react";
+import { Star, X, MapPin, Loader2, Navigation } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -8,6 +8,7 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -33,11 +34,12 @@ interface SearchFiltersProps {
   requestingLocation: boolean;
   locationError: string | null;
   onRequestLocation: () => void;
+  onGeocodeZip: (zip: string) => Promise<void>;
 }
 
 /**
  * Slide-over filter panel for the search/discover page.
- * Categories are derived from currently-loaded businesses.
+ * When Distance sort is selected users can share GPS location OR type a zip code.
  */
 export function SearchFilters({
   open,
@@ -49,8 +51,11 @@ export function SearchFilters({
   requestingLocation,
   locationError,
   onRequestLocation,
+  onGeocodeZip,
 }: SearchFiltersProps) {
   const [draft, setDraft] = React.useState<SearchFilterState>(filters);
+  const [zipInput, setZipInput] = React.useState('');
+  const [zipMode, setZipMode] = React.useState(false);
 
   // Sync draft when sheet opens
   React.useEffect(() => {
@@ -69,7 +74,14 @@ export function SearchFilters({
   const handleSortChange = (value: SortOption) => {
     setDraft((prev) => ({ ...prev, sortBy: value }));
     if (value === 'distance' && !hasLocation) {
-      onRequestLocation();
+      // Don't auto-prompt GPS; let the user choose GPS vs zip
+    }
+  };
+
+  const handleZipSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (zipInput.trim()) {
+      await onGeocodeZip(zipInput.trim());
     }
   };
 
@@ -79,12 +91,10 @@ export function SearchFilters({
   };
 
   const resetFilters = () => {
-    const reset: SearchFilterState = {
-      selectedCategories: [],
-      minRating: 0,
-      sortBy: 'relevance',
-    };
+    const reset: SearchFilterState = { selectedCategories: [], minRating: 0, sortBy: 'relevance' };
     setDraft(reset);
+    setZipInput('');
+    setZipMode(false);
     onFiltersChange(reset);
   };
 
@@ -97,8 +107,8 @@ export function SearchFilters({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:w-96 flex flex-col">
         <SheetHeader>
-          <SheetTitle className="flex items-center justify-between">
-            <span>Filters {activeCount > 0 && <Badge className="ml-2">{activeCount}</Badge>}</span>
+          <SheetTitle className="flex items-center gap-2">
+            Filters {activeCount > 0 && <Badge>{activeCount}</Badge>}
           </SheetTitle>
         </SheetHeader>
 
@@ -129,22 +139,59 @@ export function SearchFilters({
             </RadioGroup>
 
             {draft.sortBy === 'distance' && (
-              <div className="text-xs pl-6">
-                {requestingLocation && (
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Getting your location…
-                  </span>
+              <div className="ml-6 space-y-3">
+                {hasLocation ? (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <Navigation className="h-3 w-3" /> Location set
+                  </p>
+                ) : (
+                  <>
+                    {/* Toggle between GPS and zip */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={zipMode ? 'outline' : 'default'}
+                        className="h-7 text-xs"
+                        onClick={() => { setZipMode(false); onRequestLocation(); }}
+                        disabled={requestingLocation}
+                      >
+                        {requestingLocation && !zipMode
+                          ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          : <Navigation className="h-3 w-3 mr-1" />}
+                        Use GPS
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={zipMode ? 'default' : 'outline'}
+                        className="h-7 text-xs"
+                        onClick={() => setZipMode(true)}
+                      >
+                        Enter zip code
+                      </Button>
+                    </div>
+
+                    {zipMode && (
+                      <form onSubmit={handleZipSubmit} className="flex gap-2">
+                        <Input
+                          placeholder="e.g. 20001"
+                          value={zipInput}
+                          onChange={(e) => setZipInput(e.target.value)}
+                          maxLength={5}
+                          className="h-8 text-sm w-28"
+                          inputMode="numeric"
+                        />
+                        <Button type="submit" size="sm" className="h-8 text-xs" disabled={requestingLocation}>
+                          {requestingLocation ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Go'}
+                        </Button>
+                      </form>
+                    )}
+                  </>
                 )}
-                {!requestingLocation && hasLocation && (
-                  <span className="text-green-600">Location acquired</span>
-                )}
-                {!requestingLocation && !hasLocation && !locationError && (
-                  <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onRequestLocation}>
-                    Allow location access
-                  </Button>
-                )}
+
                 {locationError && (
-                  <span className="text-destructive">{locationError}</span>
+                  <p className="text-xs text-destructive">{locationError}</p>
                 )}
               </div>
             )}
@@ -162,19 +209,14 @@ export function SearchFilters({
                   type="button"
                   aria-label={`${star} star minimum`}
                   onClick={() =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      minRating: prev.minRating === star ? 0 : star,
-                    }))
+                    setDraft((prev) => ({ ...prev, minRating: prev.minRating === star ? 0 : star }))
                   }
                   className="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
                 >
                   <Star
                     className={cn(
                       'h-6 w-6 transition-colors',
-                      star <= draft.minRating
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-muted-foreground'
+                      star <= draft.minRating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
                     )}
                   />
                 </button>
@@ -191,9 +233,7 @@ export function SearchFilters({
               )}
             </div>
             {draft.minRating > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Showing {draft.minRating}+ stars
-              </p>
+              <p className="text-xs text-muted-foreground">Showing {draft.minRating}+ stars</p>
             )}
           </div>
 
@@ -222,12 +262,8 @@ export function SearchFilters({
         </div>
 
         <SheetFooter className="flex-row gap-2 pt-4 border-t">
-          <Button variant="outline" className="flex-1" onClick={resetFilters}>
-            Reset
-          </Button>
-          <Button className="flex-1" onClick={applyFilters}>
-            Apply
-          </Button>
+          <Button variant="outline" className="flex-1" onClick={resetFilters}>Reset</Button>
+          <Button className="flex-1" onClick={applyFilters}>Apply</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
