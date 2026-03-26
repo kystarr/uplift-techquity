@@ -6,6 +6,7 @@ import { Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useBusinessSearch } from '@/hooks/useBusinessSearch';
 import { useUserLocation, haversineDistanceMiles } from '@/hooks/useUserLocation';
+import { useFavorites } from '@/hooks/useFavorites';
 import { SearchFilters, type SearchFilterState } from '@/components/search/SearchFilters';
 import { Navigation } from '@/components/Navigation';
 
@@ -31,6 +32,7 @@ const Search = () => {
 
   const { businesses, loading, error, refetch } = useBusinessSearch();
   const { coords, locationError, hasLocation, requesting, requestLocation } = useUserLocation();
+  const { favoriteIds, toggleFavorite } = useFavorites();
 
   // All unique categories derived from loaded businesses
   const availableCategories = useMemo(() => {
@@ -178,6 +180,19 @@ const Search = () => {
                 }
                 tags={business.tags}
                 verified={business.verified}
+                isFavorite={favoriteIds.has(business.id)}
+                onToggleFavorite={() =>
+                  toggleFavorite({
+                    id: business.id,
+                    name: business.name,
+                    category: business.category,
+                    image:
+                      business.image ??
+                      'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=300&fit=crop',
+                    rating: business.rating,
+                    verified: business.verified,
+                  })
+                }
               />
             ))}
           </div>
