@@ -54,6 +54,9 @@ const schema = a.schema({
     verificationDocumentKey: a.string(),
     verificationStatus: a.string().required(), // PENDING | APPROVED | UNDER_REVIEW | REJECTED
     verificationSubmittedAt: a.datetime(),
+
+    // Moderation (BE-8.1)
+    flagCount: a.integer().default(0),
   }).authorization((allow) => [
     allow.owner().to(['create', 'read', 'update']),
     // Allow guest create temporarily for one-time seed script via API key auth.
@@ -68,10 +71,49 @@ const schema = a.schema({
     authorName: a.string().required(),
     rating: a.float().required(),
     text: a.string(),
+
+    // Moderation (BE-8.1)
+    flagCount: a.integer().default(0),
   }).authorization((allow) => [
     allow.owner().to(['create', 'read', 'delete']),
-    allow.authenticated().to(['read']),
+    allow.authenticated().to(['read', 'update']),
     allow.guest().to(['read']),
+  ]),
+
+  /**
+   * BE-8.1: Flag model for content moderation.
+   * Users can flag reviews or businesses for admin review.
+   */
+  Flag: a.model({
+    targetType: a.string().required(), // REVIEW | BUSINESS
+    targetId: a.string().required(),
+    reason: a.string().required(), // SPAM | INAPPROPRIATE | MISLEADING | FAKE | OTHER
+    details: a.string(),
+    status: a.string().required(), // PENDING | REVIEWED | DISMISSED | ACTION_TAKEN
+    reporterId: a.string().required(),
+    reporterName: a.string(),
+    targetName: a.string(),
+    resolvedBy: a.string(),
+    resolvedAt: a.datetime(),
+    adminNotes: a.string(),
+  }).authorization((allow) => [
+    allow.owner().to(['create', 'read']),
+    allow.authenticated().to(['read', 'update']),
+  ]),
+
+  /**
+   * BE-8.3: Admin notifications for moderation events.
+   * Created automatically when flags are submitted.
+   */
+  AdminNotification: a.model({
+    type: a.string().required(), // FLAG_CREATED | FLAG_RESOLVED | BUSINESS_SUSPENDED | REVIEW_REMOVED
+    title: a.string().required(),
+    message: a.string().required(),
+    relatedId: a.string(), // ID of the flag, review, or business
+    relatedType: a.string(), // FLAG | REVIEW | BUSINESS
+    read: a.boolean().default(false),
+  }).authorization((allow) => [
+    allow.authenticated().to(['create', 'read', 'update']),
   ]),
 
   Favorite: a.model({
