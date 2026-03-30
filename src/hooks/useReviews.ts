@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { amplifyList } from '@/lib/amplify-helpers';
 import { amplifyDataClient } from '@/amplifyDataClient';
 import { getCurrentUser } from 'aws-amplify/auth';
 import type { ReviewPreviewItem } from '@/components/business-profile/ReviewsPreview';
@@ -34,21 +35,9 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
     setLoading(true);
     setError(null);
     try {
-      // Auth mode priority: userPool (signed-in) → iam (guest) → apiKey (fallback)
-      let data: any[] | undefined;
-      let lastErr: unknown;
-      for (const authMode of ['userPool', 'iam', 'apiKey'] as const) {
-        try {
-          const res = await (amplifyDataClient.models as any).Review.list({ authMode });
-          data = res.data;
-          break;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      if (data === undefined) throw lastErr ?? new Error('All auth modes failed');
+      const data = await amplifyList('Review');
 
-      const forBusiness = (data ?? [])
+      const forBusiness = data
         .filter((r: any) => r.businessId === businessId)
         .map((r: any): ReviewPreviewItem => ({
           id: r.id,
@@ -90,17 +79,8 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
           { authMode: 'userPool' }
         );
 
-        // Re-fetch all reviews for this business to recalculate stats
-        let allData: any[] | undefined;
-        for (const authMode of ['userPool', 'iam', 'apiKey'] as const) {
-          try {
-            const res = await (amplifyDataClient.models as any).Review.list({ authMode });
-            allData = res.data;
-            break;
-          } catch { /* try next */ }
-        }
-
-        const businessReviews = (allData ?? []).filter((r: any) => r.businessId === bid);
+        const allData = await amplifyList('Review');
+        const businessReviews = allData.filter((r: any) => r.businessId === bid);
         const newCount = businessReviews.length;
         const newAverage =
           newCount > 0

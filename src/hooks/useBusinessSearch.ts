@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { amplifyDataClient } from '@/amplifyDataClient';
+import { amplifyList } from '@/lib/amplify-helpers';
 
 /**
  * Minimal shape returned for each result on the search page.
@@ -49,37 +49,9 @@ export function useBusinessSearch(): UseBusinessSearchResult {
         setLoading(true);
         setError(null);
         try {
-            // Auth mode priority:
-            //   1. userPool  — works for signed-in users (Business has allow.authenticated())
-            //   2. iam       — works for guests (Business has allow.guest() via IAM)
-            //   3. apiKey    — final fallback
-            let data: any[] | undefined;
-            let errors: Array<{ message: string }> | undefined;
+            const data = await amplifyList('Business');
 
-            const authModes = ['userPool', 'iam', 'apiKey'] as const;
-            let lastError: unknown;
-
-            for (const authMode of authModes) {
-                try {
-                    const res = await amplifyDataClient.models.Business.list({ authMode });
-                    data = res.data;
-                    errors = res.errors as Array<{ message: string }> | undefined;
-                    break; // success — stop trying
-                } catch (e) {
-                    lastError = e;
-                }
-            }
-
-            if (data === undefined) {
-                throw lastError ?? new Error('All auth modes failed');
-            }
-
-            if (errors && errors.length > 0) {
-                throw new Error(errors.map((e) => e.message).join(', '));
-            }
-
-            // Filter: only show APPROVED businesses publicly.
-            const approved = (data ?? [])
+            const approved = data
                 .filter((b) => b.verificationStatus === 'APPROVED')
                 .map((b): BusinessSearchResult => ({
                     id: b.id,
