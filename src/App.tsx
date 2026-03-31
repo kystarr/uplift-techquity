@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FaviconSync } from "@/components/FaviconSync";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { RequireRole } from "@/components/auth";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Auth from "./pages/Auth";
@@ -15,6 +16,9 @@ import Messages from "./pages/Messages";
 import RegisterBusiness from "./pages/RegisterBusiness";
 import BusinessProfilePage from "./pages/BusinessProfile";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminFlags from "./pages/admin/AdminFlags";
+import AdminBusinesses from "./pages/admin/AdminBusinesses";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +41,12 @@ const App = () => (
           <Route path="/register" element={<Navigate to="/register/1" replace />} />
           <Route path="/register/:step" element={<RegisterBusiness />} />
           <Route path="/business/:id" element={<BusinessProfilePage />} />
+
+          {/* Admin routes — requires ADMIN role */}
+          <Route path="/admin" element={<RequireRole role="ADMIN"><AdminDashboard /></RequireRole>} />
+          <Route path="/admin/flags" element={<RequireRole role="ADMIN"><AdminFlags /></RequireRole>} />
+          <Route path="/admin/businesses" element={<RequireRole role="ADMIN"><AdminBusinesses /></RequireRole>} />
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
