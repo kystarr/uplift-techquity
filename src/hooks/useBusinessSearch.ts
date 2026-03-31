@@ -10,6 +10,7 @@ export interface BusinessSearchResult {
     name: string;
     category: string;
     rating: number;
+    reviewCount: number;
     tags: string[];
     verified: boolean;
     /** First image URL, if any */
@@ -89,6 +90,7 @@ export function useBusinessSearch(): UseBusinessSearchResult {
                         b.businessType ||
                         'Business',
                     rating: typeof b.averageRating === 'number' ? b.averageRating : 0,
+                    reviewCount: typeof b.reviewCount === 'number' ? b.reviewCount : 0,
                     tags: b.tags ?? [],
                     verified: b.verified ?? false,
                     image: Array.isArray(b.images) && b.images.length > 0

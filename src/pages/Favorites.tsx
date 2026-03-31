@@ -171,7 +171,6 @@ const Favorites = () => {
                     name={fav.businessName}
                     category={fav.businessCategory}
                     rating={fav.businessRating}
-                    reviewCount={0}
                     distance={getDistanceLabel(fav.businessLatitude, fav.businessLongitude)}
                     image={
                       fav.businessImage ||
