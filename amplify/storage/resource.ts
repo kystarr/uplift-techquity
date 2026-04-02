@@ -20,13 +20,13 @@ export const storage = defineStorage({
     ],
     'business-media/{entity_id}/*': [
       allow.entity('identity').to(['read', 'write', 'delete']),
-      allow.guest().to(['read']),
-      allow.authenticated().to(['read']),
+      allow.guest.to(['read']),
+      allow.authenticated.to(['read']),
     ],
     'profile-avatars/{entity_id}/*': [
       allow.entity('identity').to(['read', 'write', 'delete']),
-      allow.guest().to(['read']),
-      allow.authenticated().to(['read']),
+      allow.guest.to(['read']),
+      allow.authenticated.to(['read']),
     ],
   }),
 });

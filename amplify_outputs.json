@@ -68,6 +68,13 @@
               "isRequired": true,
               "attributes": []
             },
+            "avatarUrl": {
+              "name": "avatarUrl",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
             "createdAt": {
               "name": "createdAt",
               "isArray": false,
@@ -364,6 +371,63 @@
               "isRequired": false,
               "attributes": []
             },
+            "flagCount": {
+              "name": "flagCount",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingBusinessName": {
+              "name": "pendingBusinessName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingStreet": {
+              "name": "pendingStreet",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingCity": {
+              "name": "pendingCity",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingState": {
+              "name": "pendingState",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingZip": {
+              "name": "pendingZip",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "verificationDocumentKeys": {
+              "name": "verificationDocumentKeys",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "customersContactedCount": {
+              "name": "customersContactedCount",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
             "createdAt": {
               "name": "createdAt",
               "isArray": false,
@@ -474,6 +538,20 @@
               "isRequired": false,
               "attributes": []
             },
+            "flagCount": {
+              "name": "flagCount",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "moderationStatus": {
+              "name": "moderationStatus",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
             "createdAt": {
               "name": "createdAt",
               "isArray": false,
@@ -516,7 +594,8 @@
                   {
                     "allow": "private",
                     "operations": [
-                      "read"
+                      "read",
+                      "update"
                     ]
                   },
                   {
@@ -524,6 +603,238 @@
                     "provider": "iam",
                     "operations": [
                       "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "Flag": {
+          "name": "Flag",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "targetType": {
+              "name": "targetType",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "targetId": {
+              "name": "targetId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reason": {
+              "name": "reason",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "details": {
+              "name": "details",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "status": {
+              "name": "status",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reporterId": {
+              "name": "reporterId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reporterName": {
+              "name": "reporterName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "targetName": {
+              "name": "targetName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "resolvedBy": {
+              "name": "resolvedBy",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "resolvedAt": {
+              "name": "resolvedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "adminNotes": {
+              "name": "adminNotes",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Flags",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "provider": "userPools",
+                    "ownerField": "owner",
+                    "allow": "owner",
+                    "operations": [
+                      "read"
+                    ],
+                    "identityClaim": "cognito:username"
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "AdminNotification": {
+          "name": "AdminNotification",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "type": {
+              "name": "type",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "title": {
+              "name": "title",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "message": {
+              "name": "message",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "relatedId": {
+              "name": "relatedId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "relatedType": {
+              "name": "relatedType",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "read": {
+              "name": "read",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "AdminNotifications",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "private",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update"
                     ]
                   }
                 ]
@@ -654,7 +965,635 @@
         }
       },
       "enums": {},
-      "nonModels": {}
+      "nonModels": {
+        "FlagTargetDetails": {
+          "name": "FlagTargetDetails",
+          "fields": {
+            "businessId": {
+              "name": "businessId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "businessName": {
+              "name": "businessName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "reviewText": {
+              "name": "reviewText",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "reviewAuthorName": {
+              "name": "reviewAuthorName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "FlagAdminView": {
+          "name": "FlagAdminView",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "targetType": {
+              "name": "targetType",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "targetId": {
+              "name": "targetId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reason": {
+              "name": "reason",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "details": {
+              "name": "details",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "status": {
+              "name": "status",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reporterId": {
+              "name": "reporterId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reporterName": {
+              "name": "reporterName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "targetName": {
+              "name": "targetName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "resolvedBy": {
+              "name": "resolvedBy",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "resolvedAt": {
+              "name": "resolvedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "adminNotes": {
+              "name": "adminNotes",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": true,
+              "attributes": []
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": true,
+              "attributes": []
+            },
+            "targetDetails": {
+              "name": "targetDetails",
+              "isArray": false,
+              "type": {
+                "nonModel": "FlagTargetDetails"
+              },
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "FlagCounts": {
+          "name": "FlagCounts",
+          "fields": {
+            "total": {
+              "name": "total",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true,
+              "attributes": []
+            },
+            "pending": {
+              "name": "pending",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true,
+              "attributes": []
+            },
+            "resolved": {
+              "name": "resolved",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true,
+              "attributes": []
+            }
+          }
+        },
+        "HiddenReviewQueueItem": {
+          "name": "HiddenReviewQueueItem",
+          "fields": {
+            "reviewId": {
+              "name": "reviewId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "businessId": {
+              "name": "businessId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "businessName": {
+              "name": "businessName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "authorName": {
+              "name": "authorName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "text": {
+              "name": "text",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "rating": {
+              "name": "rating",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "PendingVerificationQueueItem": {
+          "name": "PendingVerificationQueueItem",
+          "fields": {
+            "businessId": {
+              "name": "businessId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "businessName": {
+              "name": "businessName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "contactEmail": {
+              "name": "contactEmail",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingBusinessName": {
+              "name": "pendingBusinessName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingStreet": {
+              "name": "pendingStreet",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingCity": {
+              "name": "pendingCity",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingState": {
+              "name": "pendingState",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "pendingZip": {
+              "name": "pendingZip",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "verificationDocumentKeys": {
+              "name": "verificationDocumentKeys",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "verificationStatus": {
+              "name": "verificationStatus",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "AdminActivityEntry": {
+          "name": "AdminActivityEntry",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "actorId": {
+              "name": "actorId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "actorName": {
+              "name": "actorName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "action": {
+              "name": "action",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "targetType": {
+              "name": "targetType",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "targetId": {
+              "name": "targetId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "metadata": {
+              "name": "metadata",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": true,
+              "attributes": []
+            }
+          }
+        }
+      },
+      "queries": {
+        "listFlagsForAdmin": {
+          "name": "listFlagsForAdmin",
+          "isArray": true,
+          "type": {
+            "nonModel": "FlagAdminView"
+          },
+          "isRequired": false,
+          "isArrayNullable": true,
+          "arguments": {
+            "status": {
+              "name": "status",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "flagCountsForAdmin": {
+          "name": "flagCountsForAdmin",
+          "isArray": false,
+          "type": {
+            "nonModel": "FlagCounts"
+          },
+          "isRequired": false
+        },
+        "listHiddenReviewsForAdmin": {
+          "name": "listHiddenReviewsForAdmin",
+          "isArray": true,
+          "type": {
+            "nonModel": "HiddenReviewQueueItem"
+          },
+          "isRequired": false,
+          "isArrayNullable": true
+        },
+        "listPendingBusinessVerifications": {
+          "name": "listPendingBusinessVerifications",
+          "isArray": true,
+          "type": {
+            "nonModel": "PendingVerificationQueueItem"
+          },
+          "isRequired": false,
+          "isArrayNullable": true
+        },
+        "listAdminActivityLog": {
+          "name": "listAdminActivityLog",
+          "isArray": true,
+          "type": {
+            "nonModel": "AdminActivityEntry"
+          },
+          "isRequired": false,
+          "isArrayNullable": true
+        }
+      },
+      "mutations": {
+        "submitModerationFlag": {
+          "name": "submitModerationFlag",
+          "isArray": false,
+          "type": {
+            "nonModel": "FlagAdminView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "targetType": {
+              "name": "targetType",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "targetId": {
+              "name": "targetId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true
+            },
+            "reason": {
+              "name": "reason",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "details": {
+              "name": "details",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "resolveFlag": {
+          "name": "resolveFlag",
+          "isArray": false,
+          "type": {
+            "nonModel": "FlagAdminView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "flagId": {
+              "name": "flagId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true
+            },
+            "adminNotes": {
+              "name": "adminNotes",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "hideReview": {
+          "name": "hideReview",
+          "isArray": false,
+          "type": "Boolean",
+          "isRequired": false,
+          "arguments": {
+            "reviewId": {
+              "name": "reviewId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true
+            }
+          }
+        },
+        "adminResolveHiddenReview": {
+          "name": "adminResolveHiddenReview",
+          "isArray": false,
+          "type": "Boolean",
+          "isRequired": false,
+          "arguments": {
+            "reviewId": {
+              "name": "reviewId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true
+            },
+            "decision": {
+              "name": "decision",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "requestBusinessProfileVerification": {
+          "name": "requestBusinessProfileVerification",
+          "isArray": false,
+          "type": "Boolean",
+          "isRequired": false,
+          "arguments": {
+            "businessId": {
+              "name": "businessId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true
+            },
+            "documentKeys": {
+              "name": "documentKeys",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "isArrayNullable": false
+            },
+            "pendingBusinessName": {
+              "name": "pendingBusinessName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "pendingStreet": {
+              "name": "pendingStreet",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "pendingCity": {
+              "name": "pendingCity",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "pendingState": {
+              "name": "pendingState",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "pendingZip": {
+              "name": "pendingZip",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "adminResolveBusinessVerification": {
+          "name": "adminResolveBusinessVerification",
+          "isArray": false,
+          "type": "Boolean",
+          "isRequired": false,
+          "arguments": {
+            "businessId": {
+              "name": "businessId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true
+            },
+            "decision": {
+              "name": "decision",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "adminNotes": {
+              "name": "adminNotes",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "adminRemoveReview": {
+          "name": "adminRemoveReview",
+          "isArray": false,
+          "type": "Boolean",
+          "isRequired": false,
+          "arguments": {
+            "reviewId": {
+              "name": "reviewId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true
+            }
+          }
+        },
+        "adminRemoveBusiness": {
+          "name": "adminRemoveBusiness",
+          "isArray": false,
+          "type": "Boolean",
+          "isRequired": false,
+          "arguments": {
+            "businessId": {
+              "name": "businessId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true
+            }
+          }
+        },
+        "adminRemoveUser": {
+          "name": "adminRemoveUser",
+          "isArray": false,
+          "type": "Boolean",
+          "isRequired": false,
+          "arguments": {
+            "userId": {
+              "name": "userId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true
+            }
+          }
+        }
+      }
     }
   },
   "storage": {
@@ -672,6 +1611,42 @@
               "list",
               "write",
               "delete"
+            ]
+          },
+          "business-media/${cognito-identity.amazonaws.com:sub}/*": {
+            "entityidentity": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          },
+          "business-media/*": {
+            "guest": [
+              "get",
+              "list"
+            ],
+            "authenticated": [
+              "get",
+              "list"
+            ]
+          },
+          "profile-avatars/${cognito-identity.amazonaws.com:sub}/*": {
+            "entityidentity": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          },
+          "profile-avatars/*": {
+            "guest": [
+              "get",
+              "list"
+            ],
+            "authenticated": [
+              "get",
+              "list"
             ]
           }
         }

@@ -48,8 +48,8 @@ export const handler = async (event: ResolverEvent) => {
   const fieldName = event.info?.fieldName;
 
   switch (fieldName) {
-    case 'createFlag':
-      return createFlag(event);
+    case 'submitModerationFlag':
+      return submitModerationFlag(event);
     case 'listFlagsForAdmin':
       return listFlagsForAdmin(event);
     case 'resolveFlag':
@@ -81,7 +81,7 @@ export const handler = async (event: ResolverEvent) => {
   }
 };
 
-async function createFlag(event: ResolverEvent) {
+async function submitModerationFlag(event: ResolverEvent) {
   const identity = requireAuthenticatedUser(event);
   const reporterId = identity.sub ?? identity.username;
 
@@ -587,22 +587,30 @@ async function appendActivityLog(
   const actorId = identity.sub ?? identity.username ?? 'unknown';
   const actorName = typeof identity.username === 'string' ? identity.username : undefined;
   try {
+    const payload = JSON.stringify({
+      actorId,
+      actorName,
+      action,
+      targetType,
+      targetId,
+      ...metadata,
+    });
     await graphql(
       `
-        mutation CreateAdminActivityLog($input: CreateAdminActivityLogInput!) {
-          createAdminActivityLog(input: $input) {
+        mutation CreateAdminNotification($input: CreateAdminNotificationInput!) {
+          createAdminNotification(input: $input) {
             id
           }
         }
       `,
       {
         input: {
-          actorId,
-          actorName,
-          action,
-          targetType,
-          targetId,
-          metadata: JSON.stringify(metadata),
+          type: 'ADMIN_ACTIVITY',
+          title: action,
+          message: payload,
+          relatedId: targetId ?? actorId,
+          relatedType: 'ACTIVITY',
+          read: false,
         },
       }
     );
@@ -1228,40 +1236,56 @@ async function adminRemoveUser(event: ResolverEvent) {
 async function listAdminActivityLog(event: ResolverEvent) {
   requireAdminUser(event);
   const result = await graphql<{
-    listAdminActivityLogs: { items: Array<Record<string, unknown>> };
+    listAdminNotifications: { items: Array<Record<string, unknown>> };
   }>(
     `
-      query LAL2($limit: Int) {
-        listAdminActivityLogs(limit: $limit) {
+      query LAL2($filter: ModelAdminNotificationFilterInput, $limit: Int) {
+        listAdminNotifications(filter: $filter, limit: $limit) {
           items {
             id
-            actorId
-            actorName
-            action
-            targetType
-            targetId
-            metadata
+            type
+            title
+            message
+            relatedId
+            relatedType
             createdAt
           }
         }
       }
     `,
-    { limit: 100 }
+    {
+      filter: { type: { eq: 'ADMIN_ACTIVITY' } },
+      limit: 100,
+    }
   );
-  const items = (result.listAdminActivityLogs.items ?? []).sort(
+  const items = (result.listAdminNotifications.items ?? []).sort(
     (a, b) =>
       new Date(String(b.createdAt ?? 0)).getTime() - new Date(String(a.createdAt ?? 0)).getTime()
   );
-  return items.slice(0, 10).map((row) => ({
-    id: String(row.id),
-    actorId: String(row.actorId ?? ''),
-    actorName: row.actorName ? String(row.actorName) : undefined,
-    action: String(row.action ?? ''),
-    targetType: row.targetType ? String(row.targetType) : undefined,
-    targetId: row.targetId ? String(row.targetId) : undefined,
-    metadata: row.metadata ? String(row.metadata) : undefined,
-    createdAt: String(row.createdAt ?? ''),
-  }));
+  return items.slice(0, 10).map((row) => {
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = JSON.parse(String(row.message ?? '{}')) as Record<string, unknown>;
+    } catch {
+      parsed = {};
+    }
+    return {
+      id: String(row.id),
+      actorId: String(parsed.actorId ?? ''),
+      actorName: parsed.actorName != null ? String(parsed.actorName) : undefined,
+      action: String(parsed.action ?? row.title ?? ''),
+      targetType: parsed.targetType != null ? String(parsed.targetType) : undefined,
+      targetId: parsed.targetId != null ? String(parsed.targetId) : undefined,
+      metadata: JSON.stringify(
+        Object.fromEntries(
+          Object.entries(parsed).filter(
+            ([k]) => !['actorId', 'actorName', 'action', 'targetType', 'targetId'].includes(k)
+          )
+        )
+      ),
+      createdAt: String(row.createdAt ?? ''),
+    };
+  });
 }
 
 async function graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {

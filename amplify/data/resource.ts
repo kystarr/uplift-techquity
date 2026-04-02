@@ -208,23 +208,10 @@ const schema = a.schema({
   ]),
 
   /**
-   * Audit trail for admin actions (read/create only from moderation Lambda).
-   */
-  AdminActivityLog: a.model({
-    actorId: a.string().required(),
-    actorName: a.string(),
-    action: a.string().required(),
-    targetType: a.string(),
-    targetId: a.string(),
-    metadata: a.string(),
-  }).authorization((allow) => [
-    allow.resource(moderation).to(['create', 'read', 'delete']),
-  ]),
-
-  /**
    * BE-8.2 + BE-8.5: Validated flag creation with duplicate prevention.
    */
-  createFlag: a
+  /** Validated flag creation (name avoids clashing with model `createFlag`). */
+  submitModerationFlag: a
     .mutation()
     .arguments({
       targetType: a.string().required(), // BUSINESS | REVIEW
