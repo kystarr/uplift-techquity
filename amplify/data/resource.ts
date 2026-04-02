@@ -1,5 +1,6 @@
 import { a, defineData, type ClientSchema } from '@aws-amplify/backend';
 import { postConfirmation } from '../functions/post-confirmation/resource';
+import { moderation } from '../functions/moderation/resource';
 
 /**
  * BE-1.4: Auth Middleware via Authorization Rules
@@ -10,6 +11,37 @@ import { postConfirmation } from '../functions/post-confirmation/resource';
  * - Rules are reusable across all models
  */
 const schema = a.schema({
+  FlagTargetDetails: a.customType({
+    businessId: a.string(),
+    businessName: a.string(),
+    reviewText: a.string(),
+    reviewAuthorName: a.string(),
+  }),
+
+  FlagAdminView: a.customType({
+    id: a.id().required(),
+    targetType: a.string().required(),
+    targetId: a.string().required(),
+    reason: a.string().required(),
+    details: a.string(),
+    status: a.string().required(),
+    reporterId: a.string().required(),
+    reporterName: a.string(),
+    targetName: a.string(),
+    resolvedBy: a.string(),
+    resolvedAt: a.datetime(),
+    adminNotes: a.string(),
+    createdAt: a.datetime().required(),
+    updatedAt: a.datetime().required(),
+    targetDetails: a.ref('FlagTargetDetails'),
+  }),
+
+  FlagCounts: a.customType({
+    total: a.integer().required(),
+    pending: a.integer().required(),
+    resolved: a.integer().required(),
+  }),
+
   User: a.model({
     name: a.string().required(),
     email: a.string().required(),
@@ -97,8 +129,8 @@ const schema = a.schema({
     resolvedAt: a.datetime(),
     adminNotes: a.string(),
   }).authorization((allow) => [
-    allow.owner().to(['create', 'read']),
-    allow.authenticated().to(['read', 'update']),
+    // Flags are created and moderated via custom operations to enforce validation and admin checks.
+    allow.owner().to(['read']),
   ]),
 
   /**
@@ -128,8 +160,58 @@ const schema = a.schema({
   }).authorization((allow) => [
     allow.owner(),
   ]),
+
+  /**
+   * BE-8.2 + BE-8.5: Validated flag creation with duplicate prevention.
+   */
+  createFlag: a
+    .mutation()
+    .arguments({
+      targetType: a.string().required(), // BUSINESS | REVIEW
+      targetId: a.id().required(),
+      reason: a.string().required(),
+      details: a.string(),
+    })
+    .returns(a.ref('FlagAdminView'))
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  /**
+   * BE-8.3: Admin queue retrieval for unresolved/reported content.
+   */
+  listFlagsForAdmin: a
+    .query()
+    .arguments({
+      status: a.string(), // defaults to PENDING in resolver
+    })
+    .returns(a.ref('FlagAdminView').array())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  /**
+   * BE-8.4: Admin-only resolution flow.
+   */
+  resolveFlag: a
+    .mutation()
+    .arguments({
+      flagId: a.id().required(),
+      adminNotes: a.string(),
+    })
+    .returns(a.ref('FlagAdminView'))
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  /**
+   * BE-8.6: Optional moderation insights for prioritization.
+   */
+  flagCountsForAdmin: a
+    .query()
+    .returns(a.ref('FlagCounts'))
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
 }).authorization((allow) => [
   allow.resource(postConfirmation).to(['mutate']),
+  allow.resource(moderation).to(['query', 'mutate']),
 ]);
 
 export type Schema = ClientSchema<typeof schema>;
