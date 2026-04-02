@@ -2,11 +2,13 @@ import { defineBackend } from '@aws-amplify/backend';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 import { postConfirmation } from './functions/post-confirmation/resource';
+import { moderation } from './functions/moderation/resource';
 import { storage } from './storage/resource';
 
 defineBackend({
   auth,
   data,
   postConfirmation,
+  moderation,
   storage,
 });
