@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Search, Heart, User, MessageCircle, LogOut } from "lucide-react";
+import { Menu, Search, User, MessageCircle, LogOut } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,7 +38,7 @@ export const Navigation = () => {
             </Button>
           </div>
 
-          {/* Right side: search (all pages except /search), favorites/messages, sign out */}
+          {/* Right side: search (all pages except /search), profile/messages, sign out */}
           <div className="flex items-center gap-2">
             {!user && (
               <div className="hidden md:flex items-center gap-2">
@@ -67,10 +67,10 @@ export const Navigation = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label="Favorites"
-                  onClick={() => go("/favorites")}
+                  aria-label="Profile"
+                  onClick={() => go("/profile")}
                 >
-                  <Heart className="h-5 w-5" />
+                  <User className="h-5 w-5" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -141,10 +141,10 @@ export const Navigation = () => {
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-2"
-                  onClick={() => go("/favorites")}
+                  onClick={() => go("/profile")}
                 >
-                  <Heart className="h-4 w-4" />
-                  Favorites
+                  <User className="h-4 w-4" />
+                  Profile
                 </Button>
                 <Button
                   variant="outline"

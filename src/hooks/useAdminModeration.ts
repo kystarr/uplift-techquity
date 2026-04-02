@@ -6,48 +6,37 @@ export interface UseAdminModerationResult {
   resolveFlag: (params: ResolveFlagParams) => Promise<void>;
   removeReview: (reviewId: string, businessId: string) => Promise<void>;
   updateBusinessStatus: (businessId: string, status: string) => Promise<void>;
+  adminResolveHiddenReview: (reviewId: string, decision: 'APPROVE_HIDE' | 'RESTORE') => Promise<void>;
+  adminRemoveBusiness: (businessId: string) => Promise<void>;
+  adminRemoveUser: (userId: string) => Promise<void>;
+  adminResolveBusinessVerification: (
+    businessId: string,
+    decision: 'APPROVE' | 'REJECT',
+    adminNotes?: string
+  ) => Promise<void>;
   loading: boolean;
   error: Error | null;
 }
 
 interface ResolveFlagParams {
   flagId: string;
-  resolution: 'DISMISSED' | 'ACTION_TAKEN' | 'REVIEWED';
   adminNotes?: string;
 }
 
 /**
- * BE-8.4: Admin moderation actions.
- * Provides methods to resolve flags, remove flagged reviews,
- * and update business verification status.
+ * Admin moderation: prefer secure GraphQL mutations backed by the moderation Lambda where available.
  */
 export function useAdminModeration(): UseAdminModerationResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const resolveFlag = useCallback(async ({ flagId, resolution, adminNotes }: ResolveFlagParams) => {
+  const resolveFlag = useCallback(async ({ flagId, adminNotes }: ResolveFlagParams) => {
     setLoading(true);
     setError(null);
     try {
-      const admin = await getCurrentUser();
-
-      await (amplifyDataClient.models as any).Flag.update(
-        {
-          id: flagId,
-          status: resolution,
-          resolvedBy: admin.userId,
-          resolvedAt: new Date().toISOString(),
-          adminNotes: adminNotes ?? null,
-        },
+      await amplifyDataClient.mutations.resolveFlag(
+        { flagId, adminNotes: adminNotes ?? undefined },
         { authMode: 'userPool' }
-      );
-
-      await createNotification(
-        'FLAG_RESOLVED',
-        `Flag ${resolution.toLowerCase().replace('_', ' ')}`,
-        `An admin resolved a flag as: ${resolution}`,
-        flagId,
-        'FLAG'
       );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to resolve flag');
@@ -58,46 +47,25 @@ export function useAdminModeration(): UseAdminModerationResult {
     }
   }, []);
 
-  const removeReview = useCallback(async (reviewId: string, businessId: string) => {
+  const removeReview = useCallback(async (reviewId: string, _businessId: string) => {
     setLoading(true);
     setError(null);
     try {
-      await (amplifyDataClient.models as any).Review.delete(
-        { id: reviewId },
+      await amplifyDataClient.mutations.adminRemoveReview(
+        { reviewId },
         { authMode: 'userPool' }
       );
 
-      // Recalculate business stats after review removal
-      try {
-        const reviewsRes = await (amplifyDataClient.models as any).Review.list({
-          authMode: 'userPool',
-        });
-        const remaining = (reviewsRes.data ?? []).filter(
-          (r: any) => r.businessId === businessId
-        );
-        const newCount = remaining.length;
-        const newAverage = newCount > 0
-          ? remaining.reduce((sum: number, r: any) => sum + (r.rating ?? 0), 0) / newCount
-          : 0;
-
-        await (amplifyDataClient.models as any).Business.update(
-          {
-            id: businessId,
-            averageRating: Math.round(newAverage * 10) / 10,
-            reviewCount: newCount,
-          },
-          { authMode: 'userPool' }
-        );
-      } catch {
-        // Non-fatal: review was deleted even if stats update fails
-      }
-
-      await createNotification(
-        'REVIEW_REMOVED',
-        'Review removed by admin',
-        `A flagged review was removed from business ${businessId}`,
-        reviewId,
-        'REVIEW'
+      await amplifyDataClient.models.AdminNotification.create(
+        {
+          type: 'REVIEW_REMOVED',
+          title: 'Review removed by admin',
+          message: `Review ${reviewId} was removed.`,
+          relatedId: reviewId,
+          relatedType: 'REVIEW',
+          read: false,
+        },
+        { authMode: 'userPool' }
       );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to remove review');
@@ -112,7 +80,7 @@ export function useAdminModeration(): UseAdminModerationResult {
     setLoading(true);
     setError(null);
     try {
-      const updatePayload: Record<string, any> = {
+      const updatePayload: Record<string, unknown> = {
         id: businessId,
         verificationStatus: status,
       };
@@ -123,18 +91,21 @@ export function useAdminModeration(): UseAdminModerationResult {
         updatePayload.verified = false;
       }
 
-      await (amplifyDataClient.models as any).Business.update(
-        updatePayload,
-        { authMode: 'userPool' }
-      );
+      await amplifyDataClient.models.Business.update(updatePayload as never, {
+        authMode: 'userPool',
+      });
 
       const notifType = status === 'REJECTED' ? 'BUSINESS_SUSPENDED' : 'FLAG_RESOLVED';
-      await createNotification(
-        notifType,
-        `Business ${status.toLowerCase()}`,
-        `Business ${businessId} verification status changed to ${status}`,
-        businessId,
-        'BUSINESS'
+      await amplifyDataClient.models.AdminNotification.create(
+        {
+          type: notifType,
+          title: `Business ${status.toLowerCase()}`,
+          message: `Business ${businessId} verification status changed to ${status}`,
+          relatedId: businessId,
+          relatedType: 'BUSINESS',
+          read: false,
+        },
+        { authMode: 'userPool' }
       );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to update business status');
@@ -145,22 +116,86 @@ export function useAdminModeration(): UseAdminModerationResult {
     }
   }, []);
 
-  return { resolveFlag, removeReview, updateBusinessStatus, loading, error };
-}
+  const adminResolveHiddenReview = useCallback(
+    async (reviewId: string, decision: 'APPROVE_HIDE' | 'RESTORE') => {
+      setLoading(true);
+      setError(null);
+      try {
+        await amplifyDataClient.mutations.adminResolveHiddenReview(
+          { reviewId, decision },
+          { authMode: 'userPool' }
+        );
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error('Failed to resolve hidden review');
+        setError(err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
-async function createNotification(
-  type: string,
-  title: string,
-  message: string,
-  relatedId: string,
-  relatedType: string
-) {
-  try {
-    await (amplifyDataClient.models as any).AdminNotification.create(
-      { type, title, message, relatedId, relatedType, read: false },
-      { authMode: 'userPool' }
-    );
-  } catch {
-    // Non-fatal
-  }
+  const adminRemoveBusiness = useCallback(async (businessId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await amplifyDataClient.mutations.adminRemoveBusiness(
+        { businessId },
+        { authMode: 'userPool' }
+      );
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error('Failed to remove business');
+      setError(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const adminRemoveUser = useCallback(async (userId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await amplifyDataClient.mutations.adminRemoveUser({ userId }, { authMode: 'userPool' });
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error('Failed to remove user');
+      setError(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const adminResolveBusinessVerification = useCallback(
+    async (businessId: string, decision: 'APPROVE' | 'REJECT', adminNotes?: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await amplifyDataClient.mutations.adminResolveBusinessVerification(
+          { businessId, decision, adminNotes: adminNotes ?? undefined },
+          { authMode: 'userPool' }
+        );
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error('Failed to resolve verification');
+        setError(err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  return {
+    resolveFlag,
+    removeReview,
+    updateBusinessStatus,
+    adminResolveHiddenReview,
+    adminRemoveBusiness,
+    adminRemoveUser,
+    adminResolveBusinessVerification,
+    loading,
+    error,
+  };
 }
