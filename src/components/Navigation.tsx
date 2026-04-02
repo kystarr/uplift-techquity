@@ -67,6 +67,14 @@ export const Navigation = () => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Profile"
+                  onClick={() => go("/profile")}
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-label="Favorites"
                   onClick={() => go("/favorites")}
                 >

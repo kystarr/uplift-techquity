@@ -42,10 +42,45 @@ const schema = a.schema({
     resolved: a.integer().required(),
   }),
 
+  HiddenReviewQueueItem: a.customType({
+    reviewId: a.id().required(),
+    businessId: a.string().required(),
+    businessName: a.string(),
+    authorName: a.string(),
+    text: a.string(),
+    rating: a.float().required(),
+    createdAt: a.datetime(),
+  }),
+
+  PendingVerificationQueueItem: a.customType({
+    businessId: a.id().required(),
+    businessName: a.string(),
+    contactEmail: a.string(),
+    pendingBusinessName: a.string(),
+    pendingStreet: a.string(),
+    pendingCity: a.string(),
+    pendingState: a.string(),
+    pendingZip: a.string(),
+    verificationDocumentKeys: a.string().array(),
+    verificationStatus: a.string(),
+  }),
+
+  AdminActivityEntry: a.customType({
+    id: a.id().required(),
+    actorId: a.string().required(),
+    actorName: a.string(),
+    action: a.string().required(),
+    targetType: a.string(),
+    targetId: a.string(),
+    metadata: a.string(),
+    createdAt: a.datetime().required(),
+  }),
+
   User: a.model({
     name: a.string().required(),
     email: a.string().required(),
     role: a.string().required(), // ADMIN | OWNER | CUSTOMER
+    avatarUrl: a.string(),
   }).authorization((allow) => [
     allow.owner().to(['read', 'update']),
   ]),
@@ -89,6 +124,15 @@ const schema = a.schema({
 
     // Moderation (BE-8.1)
     flagCount: a.integer().default(0),
+
+    /** Identity change pending admin approval (name / address) */
+    pendingBusinessName: a.string(),
+    pendingStreet: a.string(),
+    pendingCity: a.string(),
+    pendingState: a.string(),
+    pendingZip: a.string(),
+    verificationDocumentKeys: a.string().array(),
+    customersContactedCount: a.integer().default(0),
   }).authorization((allow) => [
     allow.owner().to(['create', 'read', 'update']),
     // Allow guest create temporarily for one-time seed script via API key auth.
@@ -106,6 +150,8 @@ const schema = a.schema({
 
     // Moderation (BE-8.1)
     flagCount: a.integer().default(0),
+    /** visible | hidden_pending_admin | removed */
+    moderationStatus: a.string().default('visible'),
   }).authorization((allow) => [
     allow.owner().to(['create', 'read', 'delete']),
     allow.authenticated().to(['read', 'update']),
@@ -162,6 +208,20 @@ const schema = a.schema({
   ]),
 
   /**
+   * Audit trail for admin actions (read/create only from moderation Lambda).
+   */
+  AdminActivityLog: a.model({
+    actorId: a.string().required(),
+    actorName: a.string(),
+    action: a.string().required(),
+    targetType: a.string(),
+    targetId: a.string(),
+    metadata: a.string(),
+  }).authorization((allow) => [
+    allow.resource(moderation).to(['create', 'read', 'delete']),
+  ]),
+
+  /**
    * BE-8.2 + BE-8.5: Validated flag creation with duplicate prevention.
    */
   createFlag: a
@@ -207,6 +267,96 @@ const schema = a.schema({
   flagCountsForAdmin: a
     .query()
     .returns(a.ref('FlagCounts'))
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  /** Business owner soft-hides a review until admin approves or restores. */
+  hideReview: a
+    .mutation()
+    .arguments({
+      reviewId: a.id().required(),
+    })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  /** Admin approves permanent removal or restores visibility for a hidden review. */
+  adminResolveHiddenReview: a
+    .mutation()
+    .arguments({
+      reviewId: a.id().required(),
+      /** APPROVE_HIDE | RESTORE */
+      decision: a.string().required(),
+    })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  listHiddenReviewsForAdmin: a
+    .query()
+    .returns(a.ref('HiddenReviewQueueItem').array())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  listPendingBusinessVerifications: a
+    .query()
+    .returns(a.ref('PendingVerificationQueueItem').array())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  /** Owner submits docs for name/address change; sets UNDER_REVIEW. */
+  requestBusinessProfileVerification: a
+    .mutation()
+    .arguments({
+      businessId: a.id().required(),
+      documentKeys: a.string().array().required(),
+      pendingBusinessName: a.string(),
+      pendingStreet: a.string(),
+      pendingCity: a.string(),
+      pendingState: a.string(),
+      pendingZip: a.string(),
+    })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  /** Approve or reject pending business identity verification. */
+  adminResolveBusinessVerification: a
+    .mutation()
+    .arguments({
+      businessId: a.id().required(),
+      /** APPROVE | REJECT */
+      decision: a.string().required(),
+      adminNotes: a.string(),
+    })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  adminRemoveReview: a
+    .mutation()
+    .arguments({ reviewId: a.id().required() })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  adminRemoveBusiness: a
+    .mutation()
+    .arguments({ businessId: a.id().required() })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  adminRemoveUser: a
+    .mutation()
+    .arguments({ userId: a.id().required() })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(moderation)),
+
+  listAdminActivityLog: a
+    .query()
+    .returns(a.ref('AdminActivityEntry').array())
     .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function(moderation)),
 }).authorization((allow) => [

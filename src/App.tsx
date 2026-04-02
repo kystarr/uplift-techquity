@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminFlags from "./pages/admin/AdminFlags";
 import AdminBusinesses from "./pages/admin/AdminBusinesses";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,8 @@ const App = () => (
           <Route path="/register" element={<Navigate to="/register/1" replace />} />
           <Route path="/register/:step" element={<RegisterBusiness />} />
           <Route path="/business/:id" element={<BusinessProfilePage />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:tab" element={<Profile />} />
 
           {/* Admin routes — requires ADMIN role */}
           <Route path="/admin" element={<RequireRole role="ADMIN"><AdminDashboard /></RequireRole>} />

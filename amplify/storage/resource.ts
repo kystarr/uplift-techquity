@@ -18,5 +18,15 @@ export const storage = defineStorage({
     'verification-documents/{entity_id}/*': [
       allow.entity('identity').to(['read', 'write', 'delete']),
     ],
+    'business-media/{entity_id}/*': [
+      allow.entity('identity').to(['read', 'write', 'delete']),
+      allow.guest().to(['read']),
+      allow.authenticated().to(['read']),
+    ],
+    'profile-avatars/{entity_id}/*': [
+      allow.entity('identity').to(['read', 'write', 'delete']),
+      allow.guest().to(['read']),
+      allow.authenticated().to(['read']),
+    ],
   }),
 });

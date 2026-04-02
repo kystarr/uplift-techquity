@@ -48,8 +48,13 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
       }
       if (data === undefined) throw lastErr ?? new Error('All auth modes failed');
 
+      const isPublicVisible = (r: any) => {
+        const s = r.moderationStatus;
+        return !s || s === 'visible';
+      };
+
       const forBusiness = (data ?? [])
-        .filter((r: any) => r.businessId === businessId)
+        .filter((r: any) => r.businessId === businessId && isPublicVisible(r))
         .map((r: any): ReviewPreviewItem => ({
           id: r.id,
           authorName: r.authorName,
@@ -86,7 +91,14 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
         const authorId = cognitoUser.userId;
 
         await (amplifyDataClient.models as any).Review.create(
-          { businessId: bid, authorId, authorName, rating, text },
+          {
+            businessId: bid,
+            authorId,
+            authorName,
+            rating,
+            text,
+            moderationStatus: 'visible',
+          },
           { authMode: 'userPool' }
         );
 
@@ -100,7 +112,10 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
           } catch { /* try next */ }
         }
 
-        const businessReviews = (allData ?? []).filter((r: any) => r.businessId === bid);
+        const businessReviews = (allData ?? []).filter(
+          (r: any) =>
+            r.businessId === bid && (!r.moderationStatus || r.moderationStatus === 'visible')
+        );
         const newCount = businessReviews.length;
         const newAverage =
           newCount > 0
