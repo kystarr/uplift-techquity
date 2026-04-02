@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { uploadData, getUrl } from "aws-amplify/storage";
+import { uploadData } from "aws-amplify/storage";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,6 @@ import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { useOwnerBusinessReviews } from "@/hooks/useOwnerBusinessReviews";
 import { amplifyDataClient } from "@/amplifyDataClient";
 import { useFlag } from "@/hooks/useFlag";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import { Loader2, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -69,14 +62,24 @@ export function BusinessAnalyticsTab() {
 
   if (error || !business || !backendRow) {
     return (
-      <p className="text-muted-foreground">
-        No business found for your account. Complete business registration first.
-      </p>
+      <div className="space-y-3 text-muted-foreground max-w-lg">
+        {error ? (
+          <p className="text-destructive text-sm whitespace-pre-wrap">{error.message}</p>
+        ) : (
+          <p>
+            No business found for your account. If you used the seed script, sign in with that same
+            email and ensure <code className="text-xs bg-muted px-1 rounded">amplify_outputs.json</code>{" "}
+            is from your latest sandbox deploy.
+          </p>
+        )}
+        <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
+          Retry loading
+        </Button>
+      </div>
     );
   }
 
   const id = backendRow.id;
-  const images = backendRow.images ?? [];
 
   const saveContactOnly = async () => {
     setSavingContact(true);
@@ -96,44 +99,6 @@ export function BusinessAnalyticsTab() {
     } finally {
       setSavingContact(false);
     }
-  };
-
-  const uploadBusinessImages = async (files: FileList | null) => {
-    if (!files?.length) return;
-    const session = await fetchAuthSession();
-    const identityId = session.identityId;
-    if (!identityId) {
-      toast.error("Could not resolve storage identity");
-      return;
-    }
-    const newUrls: string[] = [...images];
-    for (const file of Array.from(files)) {
-      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `business-media/${identityId}/${Date.now()}-${safe}`;
-      await uploadData({
-        path,
-        data: file,
-        options: { contentType: file.type || "image/jpeg" },
-      }).result;
-      const u = await getUrl({ path });
-      newUrls.push(u.url.toString());
-    }
-    await amplifyDataClient.models.Business.update(
-      { id, images: newUrls } as never,
-      { authMode: "userPool" }
-    );
-    toast.success("Images updated");
-    await refetch();
-  };
-
-  const removeImageAt = async (index: number) => {
-    const next = images.filter((_, i) => i !== index);
-    await amplifyDataClient.models.Business.update(
-      { id, images: next } as never,
-      { authMode: "userPool" }
-    );
-    toast.success("Image removed");
-    await refetch();
   };
 
   const submitVerification = async () => {
@@ -191,7 +156,7 @@ export function BusinessAnalyticsTab() {
 
   return (
     <div className="space-y-8 max-w-3xl">
-      <h1 className="text-2xl font-semibold">Business analytics</h1>
+      <h1 className="text-2xl font-semibold">Business Analytics</h1>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Metric label="Total reviews" value={String(backendRow.reviewCount ?? reviews.length)} />
@@ -208,51 +173,8 @@ export function BusinessAnalyticsTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Business photos</CardTitle>
-          <CardDescription>Upload multiple images — they appear as a carousel on your public page.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {images.length > 0 && (
-            <Carousel className="w-full max-w-xl mx-auto">
-              <CarouselContent>
-                {images.map((src, i) => (
-                  <CarouselItem key={src + i}>
-                    <div className="relative aspect-video rounded-md overflow-hidden bg-muted">
-                      <img src={src} alt="" className="object-cover w-full h-full" />
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        className="absolute bottom-2 right-2"
-                        onClick={() => removeImageAt(i)}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
-          )}
-          <div>
-            <Label htmlFor="biz-imgs">Add images</Label>
-            <Input
-              id="biz-imgs"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => uploadBusinessImages(e.target.files)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>Contact</CardTitle>
-          <CardDescription>Phone and email (no admin approval required).</CardDescription>
+          <CardDescription>Phone and email.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 max-w-md">
           <div className="space-y-2">

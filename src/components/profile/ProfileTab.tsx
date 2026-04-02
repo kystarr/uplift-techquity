@@ -8,10 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuth } from "@/contexts/AuthContext";
+import { BusinessProfileSection } from "@/components/profile/BusinessProfileSection";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function ProfileTab() {
+  const { isBusiness } = useAuth();
   const { profile, loading, saving, updateName, updateAvatarUrl, refetch } = useUserProfile();
   const [name, setName] = useState("");
   const [nameDirty, setNameDirty] = useState(false);
@@ -85,7 +89,8 @@ export function ProfileTab() {
   };
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className={cn("space-y-6", isBusiness ? "max-w-3xl" : "max-w-lg")}>
+      {isBusiness && <BusinessProfileSection />}
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>

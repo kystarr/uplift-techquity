@@ -108,6 +108,7 @@
                     "ownerField": "owner",
                     "allow": "owner",
                     "operations": [
+                      "create",
                       "read",
                       "update"
                     ],
@@ -458,14 +459,14 @@
                 "rules": [
                   {
                     "provider": "userPools",
-                    "ownerField": "owner",
+                    "ownerField": "ownerId",
                     "allow": "owner",
                     "operations": [
                       "create",
                       "read",
                       "update"
                     ],
-                    "identityClaim": "cognito:username"
+                    "identityClaim": "sub"
                   },
                   {
                     "allow": "public",

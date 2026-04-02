@@ -82,7 +82,8 @@ const schema = a.schema({
     role: a.string().required(), // ADMIN | OWNER | CUSTOMER
     avatarUrl: a.string(),
   }).authorization((allow) => [
-    allow.owner().to(['read', 'update']),
+    /** create: first sign-in / registration syncs DynamoDB User to Cognito identity */
+    allow.owner().to(['create', 'read', 'update']),
   ]),
   Todo: a.model({
     content: a.string()
@@ -134,7 +135,8 @@ const schema = a.schema({
     verificationDocumentKeys: a.string().array(),
     customersContactedCount: a.integer().default(0),
   }).authorization((allow) => [
-    allow.owner().to(['create', 'read', 'update']),
+    /** Match app `ownerId` + `getCurrentUser().userId` (Cognito `sub`), not username */
+    allow.ownerDefinedIn('ownerId').identityClaim('sub').to(['create', 'read', 'update']),
     // Allow guest create temporarily for one-time seed script via API key auth.
     // After seeding, change back to read-only for guests.
     allow.guest().to(['create', 'read']),
