@@ -15,9 +15,6 @@ import Messages from "./pages/Messages";
 import RegisterBusiness from "./pages/RegisterBusiness";
 import BusinessProfilePage from "./pages/BusinessProfile";
 import NotFound from "./pages/NotFound";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminFlags from "./pages/admin/AdminFlags";
-import AdminBusinesses from "./pages/admin/AdminBusinesses";
 import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
@@ -43,11 +40,6 @@ const App = () => (
           <Route path="/business/:id" element={<BusinessProfilePage />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:tab" element={<Profile />} />
-
-          {/* Admin routes — requires ADMIN role */}
-          <Route path="/admin" element={<RequireRole role="ADMIN"><AdminDashboard /></RequireRole>} />
-          <Route path="/admin/flags" element={<RequireRole role="ADMIN"><AdminFlags /></RequireRole>} />
-          <Route path="/admin/businesses" element={<RequireRole role="ADMIN"><AdminBusinesses /></RequireRole>} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
