@@ -10,6 +10,8 @@ type AuthContextValue = {
   role: UserRole;
   isLoading: boolean;
   isAdmin: boolean;
+  /** Business (owner) account — `custom:role` is OWNER */
+  isBusiness: boolean;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
@@ -88,9 +90,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isAdmin = role === "ADMIN";
+  const isBusiness = role === "OWNER";
 
   return (
-    <AuthContext.Provider value={{ user, role, isLoading, isAdmin, signOut, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, role, isLoading, isAdmin, isBusiness, signOut, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -3,7 +3,7 @@ import { Container, PageHeader } from '@/components/shared';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useBusinessSearch } from '@/hooks/useBusinessSearch';
 import { useUserLocation, haversineDistanceMiles } from '@/hooks/useUserLocation';
 import { useFavorites, type FavoriteBusinessSnapshot } from '@/hooks/useFavorites';
@@ -34,6 +34,15 @@ const Search = () => {
   const { businesses, loading, error, refetch } = useBusinessSearch();
   const { coords, locationError, hasLocation, requesting, requestLocation, geocodeZip } = useUserLocation();
   const { favoriteIds, toggleFavorite } = useFavorites();
+
+  /** Ask for location once per browser session when opening Discover — not only inside Filters. */
+  useEffect(() => {
+    if (hasLocation) return;
+    if (typeof sessionStorage === "undefined") return;
+    if (sessionStorage.getItem("uplift_location_prompted") === "1") return;
+    sessionStorage.setItem("uplift_location_prompted", "1");
+    requestLocation();
+  }, [hasLocation, requestLocation]);
 
   // All unique categories derived from loaded businesses
   const availableCategories = useMemo(() => {
