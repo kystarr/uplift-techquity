@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "us-east-2_qA1ZuKFbm",
+    "user_pool_id": "us-east-2_ku4KsYkJQ",
     "aws_region": "us-east-2",
-    "user_pool_client_id": "6tv7igmjpia0ppd1m327jscd7q",
-    "identity_pool_id": "us-east-2:3f5b779c-7c39-4500-a281-99c760462eb8",
+    "user_pool_client_id": "2mkq6igilrcnlvjoh1054ndr24",
+    "identity_pool_id": "us-east-2:aaf087e3-a654-4a6b-bcf8-dd2b118a9308",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email"
@@ -26,9 +26,9 @@
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://2jzmepgetzdkhgwbx4irf52gkm.appsync-api.us-east-2.amazonaws.com/graphql",
+    "url": "https://ju76uwy2bvcsngwkvmfgyktlca.appsync-api.us-east-2.amazonaws.com/graphql",
     "aws_region": "us-east-2",
-    "api_key": "da2-hqsd4z3txzftbikp66nz3rpi4y",
+    "api_key": "da2-sfx7gmw3gzbyrllafgwzmreoue",
     "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
     "authorization_types": [
       "API_KEY",
@@ -1599,11 +1599,11 @@
   },
   "storage": {
     "aws_region": "us-east-2",
-    "bucket_name": "amplify-vitereactshadcnts-businessverificationdocs-q2vyklgut7fj",
+    "bucket_name": "amplify-vitereactshadcnts-businessverificationdocs-x94uqnwu4kai",
     "buckets": [
       {
         "name": "businessVerificationDocs",
-        "bucket_name": "amplify-vitereactshadcnts-businessverificationdocs-q2vyklgut7fj",
+        "bucket_name": "amplify-vitereactshadcnts-businessverificationdocs-x94uqnwu4kai",
         "aws_region": "us-east-2",
         "paths": {
           "verification-documents/${cognito-identity.amazonaws.com:sub}/*": {
