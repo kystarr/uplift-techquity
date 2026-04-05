@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "backend:configure-profile": "ampx configure profile",
     "backend:sandbox": "ampx sandbox",
-    "backend:sandbox:once": "ampx sandbox --once"
+    "backend:sandbox:once": "ampx sandbox --once",
+    "backend:sandbox:hgoll": "ampx sandbox --identifier hgoll",
+    "backend:sandbox:darius": "ampx sandbox --identifier dariusvalere"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.14.0",
