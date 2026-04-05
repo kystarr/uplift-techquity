@@ -34,13 +34,14 @@ The **`hgoll`** name comes from the Amplify sandbox CloudFormation stack pattern
    npm run dev
    ```
 
-4. Optional: seed the admin user (Cognito + GraphQL) after the sandbox is up:
+4. Optional: seed the admin user (Cognito + DynamoDB `User` row). You need **`amplify_outputs.json`** from this sandbox (run `npx ampx sandbox --once --identifier hgoll` if you only need to deploy and refresh outputs):
 
    ```bash
    node scripts/seed-admin.mjs
    ```
 
-   Default admin (unless overridden by env): `admin@uplift.local` / `Admin123!`
+   Default admin (unless overridden by env): `admin@uplift.local` / `Admin123!`  
+   IAM must allow Cognito admin APIs on this user pool. The script signs in with the admin password to create the `User` row (owner-based auth).
 
 ## Who updates `amplify_outputs.json`?
 
