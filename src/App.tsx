@@ -16,6 +16,7 @@ import RegisterBusiness from "./pages/RegisterBusiness";
 import BusinessProfilePage from "./pages/BusinessProfile";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import { UpliftChatAssistant } from "@/components/chat/UpliftChatAssistant";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
+        <UpliftChatAssistant />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
