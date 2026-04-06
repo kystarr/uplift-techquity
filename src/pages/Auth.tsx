@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,22 @@ import type { LoginFormValues, SignUpFormValues } from "@/lib/validations/auth";
 import { signIn, signUp, confirmSignUp } from 'aws-amplify/auth';
 import { verifyCustomRoleInToken, logTokenClaims } from '@/lib/auth-utils';
 
+function safeRedirectPath(raw: string | null): string {
+  if (!raw) return "/";
+  try {
+    const decoded = decodeURIComponent(raw);
+    if (!decoded.startsWith("/") || decoded.startsWith("//") || decoded.includes("..")) {
+      return "/";
+    }
+    return decoded;
+  } catch {
+    return "/";
+  }
+}
+
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -57,7 +71,7 @@ const Auth = () => {
         
         // Small delay to ensure auth state propagates before navigation
         setTimeout(() => {
-          navigate("/");
+          navigate(safeRedirectPath(searchParams.get("redirect")));
           // Force a page refresh to ensure Navigation component updates
           window.dispatchEvent(new Event('authstatechange'));
         }, 100);

@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, BadgeCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, BadgeCheck, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface BusinessSummaryCardProps {
@@ -24,6 +25,8 @@ export interface BusinessSummaryCardProps {
   className?: string;
   /** Optional click handler (e.g. navigate to detail) */
   onClick?: () => void;
+  /** Opens messaging with this business; shown as a secondary action so it does not require onClick. */
+  onMessage?: () => void;
 }
 
 export const BusinessSummaryCard = ({
@@ -37,6 +40,7 @@ export const BusinessSummaryCard = ({
   distance,
   className,
   onClick,
+  onMessage,
 }: BusinessSummaryCardProps) => {
   return (
     <Card
@@ -111,6 +115,25 @@ export const BusinessSummaryCard = ({
                 {tag}
               </Badge>
             ))}
+          </div>
+        )}
+
+        {onMessage && (
+          <div
+            className="mt-4"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="w-full gap-2"
+              onClick={onMessage}
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden />
+              Message owner
+            </Button>
           </div>
         )}
       </CardContent>
