@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Secrets and local env (never commit API keys)
+.env
+.env.*
+!.env.example
+
 # Amplify sandbox build artifacts (auto-generated, environment-specific)
 .amplify/artifacts/
 
