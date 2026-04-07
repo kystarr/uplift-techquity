@@ -1,82 +1,46 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, Star, MapPin } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { MessageCircle, Search, Star, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
+import { EmptyState } from "@/components/shared";
+import { useAuth } from "@/contexts/AuthContext";
+import { loadMessagingStore } from "@/lib/messaging/storage";
+import type { MessageThread } from "@/types/messaging";
 
-interface Conversation {
-  id: string;
-  businessId: string;
-  businessName: string;
-  businessImage: string;
-  businessRating: number;
-  businessDistance: string;
-  verified: boolean;
-  lastMessage: string;
-  timestamp: Date;
-  unread: boolean;
+function lastPreview(thread: MessageThread): string {
+  const last = thread.messages[thread.messages.length - 1];
+  if (!last) return "No messages yet";
+  if (last.attachment && !last.text) {
+    return last.attachment.type === "image" ? "Photo" : `File: ${last.attachment.name}`;
+  }
+  return last.text || "Message";
+}
+
+function isUnreadForCustomer(thread: MessageThread): boolean {
+  const last = thread.messages[thread.messages.length - 1];
+  return last?.sender === "business";
 }
 
 const MessagesInbox = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const userId = user!.userId;
   const [searchQuery, setSearchQuery] = useState("");
 
-  const conversations: Conversation[] = [
-    {
-      id: "1",
-      businessId: "essence-hair",
-      businessName: "Essence Hair Studio",
-      businessImage: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400",
-      businessRating: 4.8,
-      businessDistance: "1.2 mi",
-      verified: true,
-      lastMessage: "Tuesday around 2pm would be perfect!",
-      timestamp: new Date(Date.now() - 2400000),
-      unread: false,
-    },
-    {
-      id: "2",
-      businessId: "soul-cafe",
-      businessName: "Soul Food Café",
-      businessImage: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400",
-      businessRating: 4.9,
-      businessDistance: "0.8 mi",
-      verified: true,
-      lastMessage: "We'd love to cater your event! Let me send you our menu options.",
-      timestamp: new Date(Date.now() - 7200000),
-      unread: true,
-    },
-    {
-      id: "3",
-      businessId: "wellness-spa",
-      businessName: "Serenity Wellness Spa",
-      businessImage: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400",
-      businessRating: 4.7,
-      businessDistance: "2.1 mi",
-      verified: false,
-      lastMessage: "Thank you for your interest! Our massage packages start at $85.",
-      timestamp: new Date(Date.now() - 86400000),
-      unread: false,
-    },
-    {
-      id: "4",
-      businessId: "creative-studio",
-      businessName: "Urban Canvas Art Studio",
-      businessImage: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400",
-      businessRating: 4.6,
-      businessDistance: "3.5 mi",
-      verified: true,
-      lastMessage: "Classes are every Saturday at 10am. Would you like to reserve a spot?",
-      timestamp: new Date(Date.now() - 172800000),
-      unread: true,
-    },
-  ];
+  const threads = useMemo(() => {
+    const store = loadMessagingStore(userId);
+    return Object.values(store.threads).sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }, [userId]);
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.businessName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredThreads = threads.filter((t) =>
+    t.business.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatTimestamp = (date: Date) => {
@@ -85,117 +49,143 @@ const MessagesInbox = () => {
 
     if (diffInHours < 1) {
       const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      return `${diffInMinutes}m ago`;
-    } else if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
-    } else {
-      const diffInDays = Math.floor(diffInHours / 24);
-      return `${diffInDays}d ago`;
+      return `${Math.max(0, diffInMinutes)}m ago`;
     }
+    if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    }
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="container max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-foreground mb-2">Messages</h1>
           <p className="text-muted-foreground">
-            Chat with businesses you're interested in
+            Chat with businesses you have contacted. Messages are saved on this device until a server
+            inbox is connected.
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+        {threads.length === 0 ? (
+          <EmptyState
+            icon={MessageCircle}
+            title="No conversations yet"
+            description="Search for a business and tap “Message owner” to start a thread."
+            action={
+              <Button asChild>
+                <Link to="/search">Discover businesses</Link>
+              </Button>
+            }
+            className="py-16"
           />
-        </div>
+        ) : (
+          <>
+            <div className="relative mb-6">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
 
-        {/* Conversations List */}
-        <ScrollArea className="h-[calc(100vh-280px)]">
-          <div className="space-y-2">
-            {filteredConversations.length > 0 ? (
-              filteredConversations.map((conversation) => (
-                <button
-                  key={conversation.id}
-                  onClick={() => navigate(`/messages/${conversation.businessId}`)}
-                  className={`w-full p-4 rounded-lg border transition-all hover:shadow-md ${
-                    conversation.unread
-                      ? "bg-primary/5 border-primary/20"
-                      : "bg-card border-border hover:bg-accent/50"
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-14 w-14 shrink-0">
-                      <AvatarImage
-                        src={conversation.businessImage}
-                        alt={conversation.businessName}
-                      />
-                      <AvatarFallback>{conversation.businessName[0]}</AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3
-                          className={`font-semibold truncate ${
-                            conversation.unread ? "text-foreground" : "text-foreground"
-                          }`}
-                        >
-                          {conversation.businessName}
-                        </h3>
-                        {conversation.verified && (
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            Verified
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-3 w-3 fill-secondary text-secondary" />
-                          <span>{conversation.businessRating}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          <span>{conversation.businessDistance}</span>
-                        </div>
-                      </div>
-
-                      <p
-                        className={`text-sm truncate ${
-                          conversation.unread
-                            ? "font-medium text-foreground"
-                            : "text-muted-foreground"
+            <ScrollArea className="h-[calc(100vh-280px)]">
+              <div className="space-y-2">
+                {filteredThreads.length > 0 ? (
+                  filteredThreads.map((thread) => {
+                    const unread = isUnreadForCustomer(thread);
+                    return (
+                      <button
+                        key={thread.businessId}
+                        type="button"
+                        onClick={() =>
+                          navigate(`/messages/${thread.businessId}`, {
+                            state: {
+                              business: {
+                                id: thread.businessId,
+                                name: thread.business.name,
+                                category: "",
+                                rating: thread.business.rating,
+                                reviewCount: thread.business.reviewCount,
+                                distance: thread.business.distance,
+                                image: thread.business.image,
+                                tags: [],
+                                verified: thread.business.verified,
+                              },
+                            },
+                          })
+                        }
+                        className={`w-full p-4 rounded-lg border transition-all hover:shadow-md text-left ${
+                          unread
+                            ? "bg-primary/5 border-primary/20"
+                            : "bg-card border-border hover:bg-accent/50"
                         }`}
                       >
-                        {conversation.lastMessage}
-                      </p>
-                    </div>
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-14 w-14 shrink-0">
+                            <AvatarImage src={thread.business.image} alt="" />
+                            <AvatarFallback>{thread.business.name[0] ?? "?"}</AvatarFallback>
+                          </Avatar>
 
-                    <div className="shrink-0 flex flex-col items-end gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {formatTimestamp(conversation.timestamp)}
-                      </span>
-                      {conversation.unread && (
-                        <div className="h-2.5 w-2.5 rounded-full bg-primary" />
-                      )}
-                    </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold truncate text-foreground">
+                                {thread.business.name}
+                              </h3>
+                              {thread.business.verified && (
+                                <Badge variant="secondary" className="text-xs shrink-0">
+                                  Verified
+                                </Badge>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                              <div className="flex items-center gap-1">
+                                <Star className="h-3 w-3 fill-secondary text-secondary" />
+                                <span>{thread.business.rating.toFixed(1)}</span>
+                              </div>
+                              {thread.business.distance != null && (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{thread.business.distance}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <p
+                              className={`text-sm truncate ${
+                                unread ? "font-medium text-foreground" : "text-muted-foreground"
+                              }`}
+                            >
+                              {lastPreview(thread)}
+                            </p>
+                          </div>
+
+                          <div className="shrink-0 flex flex-col items-end gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {formatTimestamp(new Date(thread.updatedAt))}
+                            </span>
+                            {unread && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">No conversations match your search</p>
                   </div>
-                </button>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No conversations found</p>
+                )}
               </div>
-            )}
-          </div>
-        </ScrollArea>
+            </ScrollArea>
+          </>
+        )}
       </div>
     </div>
   );

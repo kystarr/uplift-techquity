@@ -2,93 +2,155 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* ==========================================================================
+   Design system: semantic color tokens
+   ==========================================================================
+   All colors are HSL (space-separated H S% L%) for hsl(var(--token)).
+   Components must reference these tokens only — do not hardcode palette colors.
+
+   Token mapping:
+   - background     → gray/blue 50 (page canvas)
+   - surface/card   → white-ish 100 (cards, panels; keep light and neutral)
+   - primary        → blue C200 (buttons, actions, links)
+   - defaultHeading → neutral dark (default heading/text color; interface mostly neutral)
+   - accentHeading  → purple (emphasis headings, featured labels, highlight text only)
+   - success        → green (trust badges, success states only)
+
+   Rules: Interface mostly neutral. Headings default to neutral; purple only for intentional emphasis.
+   Green = trust/success only. Controlled color accents.
+   ========================================================================== */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 260 30% 15%;
+    /* -----------------------------------------------------------------------
+       background — Page canvas. Use for main page and neutral areas.
+       Maps to: gray/blue 50. Keep surfaces light and neutral.
+       ----------------------------------------------------------------------- */
+    --background: 214 32% 97%;
+    --foreground: 222 18% 11%;
 
+    /* -----------------------------------------------------------------------
+       surface (cards) — Elevated panels: cards, popovers, modals.
+       Maps to: white-ish 100. Do not use for large purple/blue areas.
+       ----------------------------------------------------------------------- */
+    --surface: 0 0% 100%;
     --card: 0 0% 100%;
-    --card-foreground: 260 30% 15%;
-
+    --card-foreground: 222 18% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 260 30% 15%;
+    --popover-foreground: 222 18% 11%;
 
-    --primary: 265 60% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 265 65% 45%;
+    /* -----------------------------------------------------------------------
+       primary — Core actions: primary buttons, key links, navigation emphasis.
+       Maps to: blue C200. Use for interactive emphasis, not large backgrounds.
+       ----------------------------------------------------------------------- */
+    --primary: 212 76% 79%;
+    --primary-foreground: 222 18% 11%;
+    --primary-hover: 212 73% 75%;
 
-    --secondary: 45 95% 55%;
-    --secondary-foreground: 260 30% 15%;
-    --secondary-hover: 45 95% 50%;
+    /* -----------------------------------------------------------------------
+       secondary — Secondary UI: secondary buttons, subtle backgrounds.
+       Neutral, light. Not for trust or heading emphasis.
+       ----------------------------------------------------------------------- */
+    --secondary: 214 25% 91%;
+    --secondary-foreground: 222 18% 11%;
+    --secondary-hover: 214 25% 86%;
 
+    /* -----------------------------------------------------------------------
+       success — Trust and success only: verified badges, ratings, success states.
+       Maps to: green. Do not use for general accents or headings.
+       ----------------------------------------------------------------------- */
     --success: 145 65% 45%;
     --success-foreground: 0 0% 100%;
 
-    --muted: 260 10% 95%;
-    --muted-foreground: 260 10% 40%;
+    /* -----------------------------------------------------------------------
+       muted — Low-emphasis UI: secondary text, placeholders, disabled states.
+       ----------------------------------------------------------------------- */
+    --muted: 214 20% 95%;
+    --muted-foreground: 211 24% 58%;
 
-    --accent: 265 60% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* -----------------------------------------------------------------------
+       defaultHeading — Default heading and title color. Neutral dark (black/gray).
+       Use for all headings unless emphasis is intended. Keeps UI mostly neutral.
+       ----------------------------------------------------------------------- */
+    --default-heading: 222 18% 11%;
 
+    /* -----------------------------------------------------------------------
+       accentHeading — Emphasis only: featured labels, highlight text, emphasis headings.
+       Maps to: purple. Use only where emphasis is intentional, not globally.
+       ----------------------------------------------------------------------- */
+    --accent-heading: 292 63% 42%;
+    --heading-accent: 292 63% 42%;   /* legacy alias */
+    --accent: 138 62% 77%;
+    --accent-foreground: 222 18% 11%;
+    --accent-strong: 292 63% 42%;   /* legacy alias for accentHeading */
+
+    /* -----------------------------------------------------------------------
+       destructive — Destructive actions, errors.
+       ----------------------------------------------------------------------- */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 260 15% 85%;
-    --input: 260 15% 85%;
-    --ring: 265 60% 50%;
+    /* -----------------------------------------------------------------------
+       border / input / ring — Borders, form edges, focus rings. Neutral.
+       ----------------------------------------------------------------------- */
+    --border: 211 22% 88%;
+    --input: 211 22% 88%;
+    --ring: 212 76% 79%;
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(265 60% 50%), hsl(280 65% 55%));
-    --gradient-secondary: linear-gradient(135deg, hsl(45 95% 55%), hsl(35 90% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(265 60% 50%) 0%, hsl(280 65% 55%) 50%, hsl(45 95% 55%) 100%);
-    --gradient-success: linear-gradient(135deg, hsl(145 65% 45%), hsl(155 70% 50%));
+    /* Gradients: use semantic tokens; avoid large blue/purple blocks */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-hover)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-hover)));
+    --gradient-hero: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--surface)) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(155 70% 50%));
 
-    --shadow-sm: 0 2px 8px hsl(265 60% 50% / 0.08);
-    --shadow-md: 0 4px 16px hsl(265 60% 50% / 0.12);
-    --shadow-lg: 0 8px 32px hsl(265 60% 50% / 0.16);
-    --shadow-xl: 0 16px 48px hsl(265 60% 50% / 0.2);
+    --shadow-sm: 0 1px 3px hsl(220 20% 50% / 0.06);
+    --shadow-md: 0 4px 12px hsl(220 20% 50% / 0.08);
+    --shadow-lg: 0 8px 24px hsl(220 20% 50% / 0.1);
+    --shadow-xl: 0 16px 40px hsl(220 20% 50% / 0.12);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* Dark mode: same semantic tokens, darker canvas */
   .dark {
-    --background: 260 30% 8%;
-    --foreground: 0 0% 95%;
+    --background: 222 18% 8%;
+    --foreground: 60 100% 99%;
 
-    --card: 260 25% 12%;
-    --card-foreground: 0 0% 95%;
+    --surface: 222 18% 11%;
+    --card: 222 18% 11%;
+    --card-foreground: 60 100% 99%;
+    --popover: 222 18% 11%;
+    --popover-foreground: 60 100% 99%;
 
-    --popover: 260 25% 12%;
-    --popover-foreground: 0 0% 95%;
-
-    --primary: 265 65% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 265 70% 60%;
+    --primary: 212 76% 79%;
+    --primary-foreground: 222 18% 11%;
+    --primary-hover: 212 73% 75%;
 
     --secondary: 45 95% 60%;
-    --secondary-foreground: 260 30% 15%;
+    --secondary-foreground: 222 18% 11%;
     --secondary-hover: 45 95% 65%;
 
     --success: 145 65% 50%;
     --success-foreground: 0 0% 100%;
 
-    --muted: 260 20% 18%;
-    --muted-foreground: 260 10% 65%;
+    --muted: 211 22% 18%;
+    --muted-foreground: 211 24% 58%;
 
-    --accent: 265 65% 55%;
-    --accent-foreground: 0 0% 100%;
+    --default-heading: 214 20% 98%;
+    --accent-heading: 292 63% 42%;
+    --heading-accent: 292 63% 42%;
+    --accent: 138 62% 77%;
+    --accent-foreground: 222 18% 11%;
+    --accent-strong: 292 63% 42%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 260 20% 20%;
-    --input: 260 20% 20%;
-    --ring: 265 65% 55%;
+    --border: 211 22% 25%;
+    --input: 211 22% 25%;
+    --ring: 212 76% 79%;
 
     --shadow-sm: 0 2px 8px hsl(0 0% 0% / 0.3);
     --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.4);
@@ -104,5 +166,10 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Headings default to neutral; use accentHeading only for intentional emphasis */
+  h1, h2, h3, h4, h5, h6 {
+    color: hsl(var(--default-heading));
   }
 }
