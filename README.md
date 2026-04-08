@@ -36,6 +36,10 @@ npm i
 npm run dev
 ```
 
+**Amplify backend (Cognito / AppSync / DynamoDB)**
+
+`npm run dev` only starts the Vite app. To hit a real sandbox backend, run Amplify sandbox in another terminal (see [docs/BACKEND_SANDBOX.md](docs/BACKEND_SANDBOX.md)). Quick start for the shared dev identifier: `npm run backend:sandbox:hgoll`.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

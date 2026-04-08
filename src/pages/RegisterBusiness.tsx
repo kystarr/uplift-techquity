@@ -10,6 +10,7 @@ import {
 import type { Step1BusinessInfoValues } from "@/lib/validations/register";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBusinessFromRegistration } from "@/lib/business-registration";
+import { getCognitoSub } from "@/lib/cognito-identity";
 
 const TOTAL_STEPS = 3;
 
@@ -77,9 +78,13 @@ const RegisterBusiness = () => {
 
               // Create Business record in Amplify Data backend and upload
               // any Step 2 verification documents to S3.
+              const sub = await getCognitoSub();
+              if (!sub) {
+                throw new Error("Could not resolve your account id. Try signing out and back in.");
+              }
               await createBusinessFromRegistration({
                 step1: step1Data,
-                ownerId: user.userId,
+                ownerId: sub,
                 documents: step2Files,
               });
 

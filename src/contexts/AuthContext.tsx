@@ -1,28 +1,55 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { getCurrentUser, signOut as amplifySignOut } from "aws-amplify/auth";
+import { getCurrentUser, signOut as amplifySignOut, fetchAuthSession } from "aws-amplify/auth";
 import { Hub } from "aws-amplify/utils";
 
 type AuthUser = Awaited<ReturnType<typeof getCurrentUser>> | null;
+export type UserRole = "ADMIN" | "OWNER" | "CUSTOMER" | null;
 
 type AuthContextValue = {
   user: AuthUser;
+  role: UserRole;
   isLoading: boolean;
+  isAdmin: boolean;
+  /** Business (owner) account — `custom:role` is OWNER */
+  isBusiness: boolean;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const base64 = token.split('.')[1];
+    if (!base64) return null;
+    return JSON.parse(atob(base64.replace(/-/g, '+').replace(/_/g, '/')));
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser>(null);
+  const [role, setRole] = useState<UserRole>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
     try {
       const u = await getCurrentUser();
       setUser(u);
+
+      const session = await fetchAuthSession();
+      const idToken = session.tokens?.idToken?.toString();
+      if (idToken) {
+        const claims = decodeJwtPayload(idToken);
+        const tokenRole = (claims?.['custom:role'] as string) || null;
+        setRole(tokenRole as UserRole);
+      } else {
+        setRole(null);
+      }
     } catch {
       setUser(null);
+      setRole(null);
     } finally {
       setIsLoading(false);
     }
@@ -42,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         case "signedOut":
         case "signOutWithUserAgent":
           setUser(null);
+          setRole(null);
           break;
         default:
           break;
@@ -53,14 +81,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       await amplifySignOut();
-      setUser(null);
     } catch {
+      // proceed regardless
+    } finally {
       setUser(null);
+      setRole(null);
     }
   }, []);
 
+  const isAdmin = role === "ADMIN";
+  const isBusiness = role === "OWNER";
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, signOut, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, role, isLoading, isAdmin, isBusiness, signOut, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

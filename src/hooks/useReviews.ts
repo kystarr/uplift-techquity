@@ -37,8 +37,13 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
     try {
       const data = await amplifyList('Review');
 
-      const forBusiness = data
-        .filter((r: any) => r.businessId === businessId)
+      const isPublicVisible = (r: any) => {
+        const s = r.moderationStatus;
+        return !s || s === 'visible';
+      };
+
+      const forBusiness = (data ?? [])
+        .filter((r: any) => r.businessId === businessId && isPublicVisible(r))
         .map((r: any): ReviewPreviewItem => ({
           id: r.id,
           authorName: r.authorName,
@@ -75,12 +80,31 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
         const authorId = cognitoUser.userId;
 
         await (amplifyDataClient.models as any).Review.create(
-          { businessId: bid, authorId, authorName, rating, text },
+          {
+            businessId: bid,
+            authorId,
+            authorName,
+            rating,
+            text,
+            moderationStatus: 'visible',
+          },
           { authMode: 'userPool' }
         );
 
-        const allData = await amplifyList('Review');
-        const businessReviews = allData.filter((r: any) => r.businessId === bid);
+        // Re-fetch all reviews for this business to recalculate stats
+        let allData: any[] | undefined;
+        for (const authMode of ['userPool', 'iam', 'apiKey'] as const) {
+          try {
+            const res = await (amplifyDataClient.models as any).Review.list({ authMode });
+            allData = res.data;
+            break;
+          } catch { /* try next */ }
+        }
+
+        const businessReviews = (allData ?? []).filter(
+          (r: any) =>
+            r.businessId === bid && (!r.moderationStatus || r.moderationStatus === 'visible')
+        );
         const newCount = businessReviews.length;
         const newAverage =
           newCount > 0
