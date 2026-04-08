@@ -9,17 +9,13 @@ import { Container } from "@/components/shared";
 import { LoginForm, SignUpForm } from "@/components/auth";
 import type { LoginFormValues, SignUpFormValues } from "@/lib/validations/auth";
 import { Navigation } from "@/components/Navigation";
-
-// 1. Added confirmSignUp to imports
-import { signIn, signUp, confirmSignUp } from 'aws-amplify/auth';
-import { verifyCustomRoleInToken, logTokenClaims } from '@/lib/auth-utils';
+import { login, register, confirmRegistration } from "@/lib/auth-service";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  // 2. New state to track the confirmation flow
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [authCode, setAuthCode] = useState("");
@@ -27,41 +23,19 @@ const Auth = () => {
   const handleLogin = async (values: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const { isSignedIn } = await signIn({
-        username: values.email,
-        password: values.password,
-      });
+      const result = await login({ email: values.email, password: values.password });
 
-      if (isSignedIn) {
-        // BE-1.3: Verify custom:role is in ID token (critical for Sprint 2)
-        const tokenCheck = await verifyCustomRoleInToken();
-        
-        if (!tokenCheck.hasCustomRole) {
-          console.warn('⚠️ BE-1.3: custom:role NOT found in ID token!');
-          console.warn('This needs to be fixed in Cognito App Client settings.');
+      if (result.isSignedIn) {
+        if (!result.hasCustomRole) {
           toast({
             variant: "destructive",
             title: "Token Verification Warning",
             description: "custom:role not found in token. Check Cognito app client settings.",
           });
-        } else {
-          console.log('✅ BE-1.3: custom:role verified in token:', tokenCheck.role);
         }
-        
-        // Log full token claims for debugging (remove in production)
-        await logTokenClaims();
 
-        toast({
-          title: "Welcome back!",
-          description: "You're signed in.",
-        });
-        
-        // Small delay to ensure auth state propagates before navigation
-        setTimeout(() => {
-          navigate("/");
-          // Force a page refresh to ensure Navigation component updates
-          window.dispatchEvent(new Event('authstatechange'));
-        }, 100);
+        toast({ title: "Welcome back!", description: "You're signed in." });
+        navigate("/");
       }
     } catch (error: any) {
       toast({
@@ -77,19 +51,13 @@ const Auth = () => {
   const handleSignUp = async (values: SignUpFormValues) => {
     setIsLoading(true);
     try {
-      await signUp({
-        username: values.email,
+      await register({
+        email: values.email,
         password: values.password,
-        options: {
-          userAttributes: {
-            email: values.email,
-            name: `${values.firstName} ${values.lastName}`.trim(),
-            "custom:role": "CUSTOMER",
-          },
-        },
+        firstName: values.firstName,
+        lastName: values.lastName,
       });
 
-      // 3. Move to confirmation step
       setUserEmail(values.email);
       setNeedsConfirmation(true);
 
@@ -108,22 +76,18 @@ const Auth = () => {
     }
   };
 
-  // 4. New function to handle the email code verification
   const handleConfirmCode = async () => {
     if (!authCode) return;
     setIsLoading(true);
     try {
-      await confirmSignUp({
-        username: userEmail,
-        confirmationCode: authCode,
-      });
+      await confirmRegistration(userEmail, authCode);
 
       toast({
         title: "Account Verified",
         description: "Your account is now active. Please sign in.",
       });
-      
-      setNeedsConfirmation(false); // Return to Login/Tabs view
+
+      setNeedsConfirmation(false);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -140,7 +104,7 @@ const Auth = () => {
       <Navigation />
       <Container maxWidth="md" padding="lg">
         <div className="max-w-md mx-auto">
-        {/* 5. Conditional Rendering: Show confirmation UI if needed, else show Tabs */}
+        {/* Show confirmation UI when awaiting email verification, otherwise show login/signup tabs */}
         {needsConfirmation ? (
           <Card className="animate-in fade-in zoom-in duration-300">
             <CardHeader>

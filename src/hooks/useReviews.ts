@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { amplifyList } from '@/lib/amplify-helpers';
 import { amplifyDataClient } from '@/amplifyDataClient';
 import { getCurrentUser } from 'aws-amplify/auth';
 import type { ReviewPreviewItem } from '@/components/business-profile/ReviewsPreview';
@@ -34,19 +35,7 @@ export function useReviews(businessId: string | undefined): UseReviewsResult {
     setLoading(true);
     setError(null);
     try {
-      // Auth mode priority: userPool (signed-in) → iam (guest) → apiKey (fallback)
-      let data: any[] | undefined;
-      let lastErr: unknown;
-      for (const authMode of ['userPool', 'iam', 'apiKey'] as const) {
-        try {
-          const res = await (amplifyDataClient.models as any).Review.list({ authMode });
-          data = res.data;
-          break;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      if (data === undefined) throw lastErr ?? new Error('All auth modes failed');
+      const data = await amplifyList('Review');
 
       const isPublicVisible = (r: any) => {
         const s = r.moderationStatus;
