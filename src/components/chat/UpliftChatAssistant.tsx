@@ -1,5 +1,4 @@
-import { useCallback, useRef, useState } from "react";
-import type { ChatSession } from "@google/generative-ai";
+import { useCallback, useState } from "react";
 import { Bot, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -7,31 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { createUpliftChatSession, isGeminiConfigured, sendUpliftMessage } from "@/lib/gemini-chat";
+import { sendChatWithAssistantMessage } from "@/lib/chat-assistant";
 
 type UiMessage = { role: "user" | "assistant"; text: string };
 
 const SUGGESTED_PROMPTS = [
-  "How do I find businesses near me?",
+  "What businesses are on Uplift in my area?",
   "What does verified mean here?",
   "How can a business join Uplift?",
 ] as const;
 
 /**
- * Floating assistant: FAB opens a compact side card (not full-height). Gemini runs in the
- * browser via `VITE_GEMINI_API_KEY` (dev / prototypes only — use a server proxy before production).
+ * Floating assistant: server-side Gemini + live APPROVED businesses snapshot (`chatWithAssistant`).
  */
 export function UpliftChatAssistant() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [sending, setSending] = useState(false);
-  const chatRef = useRef<ChatSession | null>(null);
-
-  const configured = isGeminiConfigured();
 
   const resetConversation = useCallback(() => {
-    chatRef.current = null;
     setMessages([]);
   }, []);
 
@@ -39,20 +33,18 @@ export function UpliftChatAssistant() {
     async (raw: string) => {
       const text = raw.trim();
       if (!text || sending) return;
-      if (!configured) {
-        toast.error("Add VITE_GEMINI_API_KEY to your .env file to enable the assistant.");
-        return;
-      }
+
+      const priorHistory = messages.map((m) => ({
+        role: m.role,
+        content: m.text,
+      }));
 
       setMessages((prev) => [...prev, { role: "user", text }]);
       setInput("");
       setSending(true);
 
       try {
-        if (!chatRef.current) {
-          chatRef.current = createUpliftChatSession();
-        }
-        const reply = await sendUpliftMessage(chatRef.current, text);
+        const reply = await sendChatWithAssistantMessage(text, priorHistory);
         setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Something went wrong.";
@@ -62,7 +54,7 @@ export function UpliftChatAssistant() {
         setSending(false);
       }
     },
-    [configured, sending],
+    [messages, sending],
   );
 
   const onSubmit = (e: React.FormEvent) => {
@@ -94,7 +86,6 @@ export function UpliftChatAssistant() {
           onPointerDownOutside={(e) => e.preventDefault()}
           className={cn(
             "flex flex-col gap-0 overflow-hidden p-0",
-            /* Floating card — same corner as the FAB (FAB is hidden while open) */
             "left-auto top-auto h-[min(31rem,calc(100vh-7rem))] w-[min(22rem,calc(100vw-2rem))]",
             "bottom-5 right-4 sm:right-5 sm:max-w-none",
             "rounded-2xl border border-border shadow-xl",
@@ -111,7 +102,8 @@ export function UpliftChatAssistant() {
               <div className="min-w-0 flex-1">
                 <SheetTitle className="text-base">Uplift assistant</SheetTitle>
                 <SheetDescription className="text-xs text-muted-foreground">
-                  Ask how to use the app or get ideas for supporting minority-owned businesses.
+                  Answers use live approved listings from Discover (via the backend). Deploy the Amplify sandbox and set the
+                  GEMINI_API_KEY secret.
                 </SheetDescription>
               </div>
             </div>
@@ -128,19 +120,10 @@ export function UpliftChatAssistant() {
             )}
           </SheetHeader>
 
-          {!configured && (
-            <p className="border-b border-border bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
-              Set <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">VITE_GEMINI_API_KEY</code> in{" "}
-              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">.env</code> and restart{" "}
-              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">npm run dev</code>. Use a backend
-              proxy before shipping to production.
-            </p>
-          )}
-
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
             {messages.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Try one of the suggestions below, or type your own question.
+                Try one of the suggestions below, or ask about businesses and locations on the platform.
               </p>
             )}
             {messages.map((m, i) => (
@@ -169,7 +152,7 @@ export function UpliftChatAssistant() {
                   <button
                     key={label}
                     type="button"
-                    disabled={sending || !configured}
+                    disabled={sending}
                     onClick={() => void sendText(label)}
                     className={cn(
                       "rounded-full border border-primary/40 bg-primary/5 px-3 py-1.5 text-left text-xs font-medium text-foreground",
@@ -187,14 +170,14 @@ export function UpliftChatAssistant() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about Uplift…"
-                disabled={sending || !configured}
+                disabled={sending}
                 className="min-w-0 flex-1 rounded-full border-border bg-muted/80"
                 aria-label="Message to assistant"
               />
               <Button
                 type="submit"
                 size="icon"
-                disabled={sending || !input.trim() || !configured}
+                disabled={sending || !input.trim()}
                 className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover"
                 aria-label="Send message"
               >

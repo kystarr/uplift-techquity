@@ -1,6 +1,7 @@
 import { a, defineData, type ClientSchema } from '@aws-amplify/backend';
 import { postConfirmation } from '../functions/post-confirmation/resource';
 import { moderation } from '../functions/moderation/resource';
+import { chatAssistant } from '../functions/chat-assistant/resource';
 
 /**
  * BE-1.4: Auth Middleware via Authorization Rules
@@ -63,6 +64,16 @@ const schema = a.schema({
     pendingZip: a.string(),
     verificationDocumentKeys: a.string().array(),
     verificationStatus: a.string(),
+  }),
+
+  /** Prior turns for multi-turn chat (server rebuilds context each request). */
+  ChatAssistantTurn: a.customType({
+    role: a.string().required(),
+    content: a.string().required(),
+  }),
+
+  AssistantChatReply: a.customType({
+    reply: a.string().required(),
   }),
 
   AdminActivityEntry: a.customType({
@@ -213,6 +224,19 @@ const schema = a.schema({
    * BE-8.2 + BE-8.5: Validated flag creation with duplicate prevention.
    */
   /** Validated flag creation (name avoids clashing with model `createFlag`). */
+  /**
+   * Grounded assistant: loads approved businesses server-side and calls Gemini with a secret key.
+   */
+  chatWithAssistant: a
+    .mutation()
+    .arguments({
+      message: a.string().required(),
+      history: a.ref('ChatAssistantTurn').array(),
+    })
+    .returns(a.ref('AssistantChatReply'))
+    .authorization((allow) => [allow.authenticated(), allow.guest()])
+    .handler(a.handler.function(chatAssistant)),
+
   submitModerationFlag: a
     .mutation()
     .arguments({
@@ -351,6 +375,7 @@ const schema = a.schema({
 }).authorization((allow) => [
   allow.resource(postConfirmation).to(['mutate']),
   allow.resource(moderation).to(['query', 'mutate']),
+  allow.resource(chatAssistant).to(['query', 'mutate']),
 ]);
 
 export type Schema = ClientSchema<typeof schema>;
