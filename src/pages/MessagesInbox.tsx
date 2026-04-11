@@ -1,85 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Star, MapPin } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Navigation } from "@/components/Navigation";
-
-interface Conversation {
-  id: string;
-  businessId: string;
-  businessName: string;
-  businessImage: string;
-  businessRating: number;
-  businessDistance: string;
-  verified: boolean;
-  lastMessage: string;
-  timestamp: Date;
-  unread: boolean;
-}
+import { useMessages } from "@/hooks/useMessages";
 
 const MessagesInbox = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-
-  const conversations: Conversation[] = [
-    {
-      id: "1",
-      businessId: "essence-hair",
-      businessName: "Essence Hair Studio",
-      businessImage: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400",
-      businessRating: 4.8,
-      businessDistance: "1.2 mi",
-      verified: true,
-      lastMessage: "Tuesday around 2pm would be perfect!",
-      timestamp: new Date(Date.now() - 2400000),
-      unread: false,
-    },
-    {
-      id: "2",
-      businessId: "soul-cafe",
-      businessName: "Soul Food Café",
-      businessImage: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400",
-      businessRating: 4.9,
-      businessDistance: "0.8 mi",
-      verified: true,
-      lastMessage: "We'd love to cater your event! Let me send you our menu options.",
-      timestamp: new Date(Date.now() - 7200000),
-      unread: true,
-    },
-    {
-      id: "3",
-      businessId: "wellness-spa",
-      businessName: "Serenity Wellness Spa",
-      businessImage: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400",
-      businessRating: 4.7,
-      businessDistance: "2.1 mi",
-      verified: false,
-      lastMessage: "Thank you for your interest! Our massage packages start at $85.",
-      timestamp: new Date(Date.now() - 86400000),
-      unread: false,
-    },
-    {
-      id: "4",
-      businessId: "creative-studio",
-      businessName: "Urban Canvas Art Studio",
-      businessImage: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400",
-      businessRating: 4.6,
-      businessDistance: "3.5 mi",
-      verified: true,
-      lastMessage: "Classes are every Saturday at 10am. Would you like to reserve a spot?",
-      timestamp: new Date(Date.now() - 172800000),
-      unread: true,
-    },
-  ];
+  const { conversations, loading, error, markConversationAsRead } = useMessages();
 
   const filteredConversations = conversations.filter((conv) =>
-    conv.businessName.toLowerCase().includes(searchQuery.toLowerCase())
+    (conv.businessName ?? "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const formatTimestamp = (date: Date) => {
+  const formatTimestamp = (dateStr?: string | null) => {
+    if (!dateStr) return "now";
+    
+    const date = new Date(dateStr);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
@@ -92,6 +33,11 @@ const MessagesInbox = () => {
       const diffInDays = Math.floor(diffInHours / 24);
       return `${diffInDays}d ago`;
     }
+  };
+
+  const handleConversationClick = async (conversationId: string) => {
+    await markConversationAsRead(conversationId);
+    navigate(`/messages/${conversationId}`);
   };
 
   return (
@@ -120,13 +66,22 @@ const MessagesInbox = () => {
         {/* Conversations List */}
         <ScrollArea className="h-[calc(100vh-280px)]">
           <div className="space-y-2">
-            {filteredConversations.length > 0 ? (
+            {error && (
+              <div className="p-4 bg-destructive/10 text-destructive rounded">
+                Error loading conversations: {error.message}
+              </div>
+            )}
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading conversations...</p>
+              </div>
+            ) : filteredConversations.length > 0 ? (
               filteredConversations.map((conversation) => (
                 <button
                   key={conversation.id}
-                  onClick={() => navigate(`/messages/${conversation.businessId}`)}
+                  onClick={() => handleConversationClick(conversation.id)}
                   className={`w-full p-4 rounded-lg border transition-all hover:shadow-md ${
-                    conversation.unread
+                    conversation.unreadCount > 0
                       ? "bg-primary/5 border-primary/20"
                       : "bg-card border-border hover:bg-accent/50"
                   }`}
@@ -134,56 +89,42 @@ const MessagesInbox = () => {
                   <div className="flex items-start gap-4">
                     <Avatar className="h-14 w-14 shrink-0">
                       <AvatarImage
-                        src={conversation.businessImage}
-                        alt={conversation.businessName}
+                        src={conversation.businessImage || undefined}
+                        alt={conversation.businessName || "Business"}
                       />
-                      <AvatarFallback>{conversation.businessName[0]}</AvatarFallback>
+                      <AvatarFallback>{(conversation.businessName || "B")[0]}</AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 mb-1">
                         <h3
                           className={`font-semibold truncate ${
-                            conversation.unread ? "text-foreground" : "text-foreground"
+                            conversation.unreadCount > 0 ? "text-foreground font-bold" : "text-foreground"
                           }`}
                         >
-                          {conversation.businessName}
+                          {conversation.businessName || "Conversation"}
                         </h3>
-                        {conversation.verified && (
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            Verified
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-3 w-3 fill-secondary text-secondary" />
-                          <span>{conversation.businessRating}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-primary">
-                          <MapPin className="h-3 w-3 text-primary" />
-                          <span className="text-primary">{conversation.businessDistance}</span>
-                        </div>
                       </div>
 
                       <p
                         className={`text-sm truncate ${
-                          conversation.unread
+                          conversation.unreadCount > 0
                             ? "font-medium text-foreground"
                             : "text-muted-foreground"
                         }`}
                       >
-                        {conversation.lastMessage}
+                        {conversation.lastMessage || "No messages yet"}
                       </p>
                     </div>
 
                     <div className="shrink-0 flex flex-col items-end gap-2">
                       <span className="text-xs text-muted-foreground">
-                        {formatTimestamp(conversation.timestamp)}
+                        {formatTimestamp(conversation.lastMessageTimestamp)}
                       </span>
-                      {conversation.unread && (
-                        <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                      {conversation.unreadCount > 0 && (
+                        <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                          {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                        </div>
                       )}
                     </div>
                   </div>
