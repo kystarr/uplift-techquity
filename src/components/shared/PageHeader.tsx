@@ -23,7 +23,7 @@ export const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
           {title}
         </h1>
         {description && (
-          <p className="mt-2 text-muted-foreground">{description}</p>
+          <p className="mt-2 text-muted-foreground max-w-2xl">{description}</p>
         )}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

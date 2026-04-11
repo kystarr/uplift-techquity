@@ -54,6 +54,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        glass: "hsl(var(--glass))",
+        panel: {
+          DEFAULT: "hsl(var(--panel))",
+          foreground: "hsl(var(--panel-foreground))",
+        },
         /* defaultHeading: neutral dark — default for all headings */
         defaultHeading: "hsl(var(--default-heading))",
         /* accentHeading: purple — emphasis headings, featured labels, highlight text only */
@@ -72,6 +77,7 @@ export default {
         'md': 'var(--shadow-md)',
         'lg': 'var(--shadow-lg)',
         'xl': 'var(--shadow-xl)',
+        'glass': 'var(--shadow-glass)',
       },
       transitionProperty: {
         'smooth': 'var(--transition-smooth)',
@@ -80,6 +86,8 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "var(--radius-lg)",
+        "2xl": "var(--radius-xl)",
       },
       keyframes: {
         "accordion-down": {

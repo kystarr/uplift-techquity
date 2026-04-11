@@ -54,7 +54,7 @@ export function ReviewForm({ businessId, submitting = false, onSubmit }: ReviewF
         <CardContent className="py-6 text-center space-y-2">
           <p className="text-sm text-muted-foreground">
             <Link to="/auth" className="text-primary underline underline-offset-4 hover:opacity-80">
-              Sign in
+              Sign In/Sign Up
             </Link>{' '}
             to leave a review.
           </p>

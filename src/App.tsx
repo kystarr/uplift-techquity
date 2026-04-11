@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FaviconSync } from "@/components/FaviconSync";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { RequireRole } from "@/components/auth";
+import { ThemeProvider } from "@/components/theme-provider";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Auth from "./pages/Auth";
@@ -17,39 +18,44 @@ import BusinessProfilePage from "./pages/BusinessProfile";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import { UpliftChatAssistant } from "@/components/chat/UpliftChatAssistant";
+import { AppShell } from "@/components/AppShell";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <FaviconSync />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-            <Route path="/favorites" element={<Navigate to="/profile/favorites" replace />} />
-          <Route path="/messages" element={<MessagesInbox />} />
-          <Route path="/messages/:businessId" element={<Messages />} />
-          <Route path="/register" element={<Navigate to="/register/1" replace />} />
-          <Route path="/register/:step" element={<RegisterBusiness />} />
-          <Route path="/business/:id" element={<BusinessProfilePage />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/:tab" element={<Profile />} />
+  <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <FaviconSync />
+            <Routes>
+              <Route element={<AppShell />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+                <Route path="/favorites" element={<Navigate to="/profile/favorites" replace />} />
+                <Route path="/messages" element={<MessagesInbox />} />
+                <Route path="/messages/:businessId" element={<Messages />} />
+                <Route path="/register" element={<Navigate to="/register/1" replace />} />
+                <Route path="/register/:step" element={<RegisterBusiness />} />
+                <Route path="/business/:id" element={<BusinessProfilePage />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/:tab" element={<Profile />} />
+              </Route>
 
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-          </Routes>
-        <UpliftChatAssistant />
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <UpliftChatAssistant />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

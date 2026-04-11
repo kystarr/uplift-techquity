@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Send, Paperclip, Star, MapPin } from "lucide-react";
+import { ArrowLeft, Send, Paperclip, Star, MapPin, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Navigation } from "@/components/Navigation";
 
 interface Message {
   id: string;
@@ -97,10 +96,9 @@ const Messages = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <Navigation />
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-background">
       {/* Header with Business Info */}
-      <div className="border-b border-border bg-card">
+      <div className="border-b border-white/20 bg-glass backdrop-blur-[var(--blur-glass)]">
         <div className="container max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Button
@@ -124,8 +122,8 @@ const Messages = () => {
                     {business.name}
                   </h2>
                   {business.verified && (
-                    <Badge variant="secondary" className="text-xs shrink-0">
-                      Verified
+                    <Badge className="shrink-0 bg-success text-success-foreground border-0 p-1.5" aria-label="Verified business">
+                      <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
                     </Badge>
                   )}
                 </div>
@@ -162,7 +160,7 @@ const Messages = () => {
                     message.sender === "customer"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-foreground"
-                  } rounded-2xl px-4 py-2.5 shadow-sm`}
+                  } rounded-2xl px-4 py-3 shadow-sm`}
                 >
                   {message.attachment && (
                     <div className="mb-2">
@@ -198,7 +196,7 @@ const Messages = () => {
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="border-t border-border bg-card">
+      <div className="border-t border-white/20 bg-glass">
         <div className="container max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-end gap-2">
             <input

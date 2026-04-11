@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Star, MapPin } from "lucide-react";
+import { Search, Star, MapPin, BadgeCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Navigation } from "@/components/Navigation";
 
 interface Conversation {
   id: string;
@@ -95,11 +94,9 @@ const MessagesInbox = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-6">
+    <div className="bg-background">
+      <div className="container max-w-4xl mx-auto px-4 py-10">
+        <div className="mb-6 glass-panel rounded-2xl p-6">
           <h1 className="text-3xl font-bold text-foreground mb-2">Messages</h1>
           <p className="text-muted-foreground">
             Chat with businesses you're interested in
@@ -125,10 +122,10 @@ const MessagesInbox = () => {
                 <button
                   key={conversation.id}
                   onClick={() => navigate(`/messages/${conversation.businessId}`)}
-                  className={`w-full p-4 rounded-lg border transition-all hover:shadow-md ${
+                  className={`w-full p-5 rounded-2xl border border-white/30 backdrop-blur-[var(--blur-glass)] transition-smooth hover:-translate-y-0.5 ${
                     conversation.unread
-                      ? "bg-primary/5 border-primary/20"
-                      : "bg-card border-border hover:bg-accent/50"
+                      ? "bg-primary-light/60 border-primary/35"
+                      : "bg-glass hover:bg-white/45 dark:hover:bg-white/10"
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -150,8 +147,8 @@ const MessagesInbox = () => {
                           {conversation.businessName}
                         </h3>
                         {conversation.verified && (
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            Verified
+                          <Badge className="shrink-0 bg-success text-success-foreground border-0 p-1.5" aria-label="Verified business">
+                            <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
                           </Badge>
                         )}
                       </div>

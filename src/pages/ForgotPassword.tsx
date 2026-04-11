@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared";
 import { useToast } from "@/hooks/use-toast";
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@/lib/validations/auth";
-import { Navigation } from "@/components/Navigation";
 
 const ForgotPassword = () => {
   const { toast } = useToast();
@@ -44,8 +43,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <div className="bg-background">
       <Container maxWidth="md" padding="lg">
         <div className="max-w-md mx-auto">
           <Link
@@ -53,7 +51,7 @@ const ForgotPassword = () => {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Sign in
+            Back to Sign In/Sign Up
           </Link>
 
           <Card>

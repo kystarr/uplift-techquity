@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Star, X, MapPin, Loader2, Navigation } from "lucide-react";
+import { Star, X, Loader2, Navigation } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -105,7 +105,7 @@ export function SearchFilters({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:w-96 flex flex-col">
+      <SheetContent side="right" className="w-full sm:w-[28rem] flex flex-col glass-panel-strong">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             Filters {activeCount > 0 && <Badge>{activeCount}</Badge>}
@@ -127,21 +127,18 @@ export function SearchFilters({
               </div>
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="rating" id="sort-rating" />
-                <Label htmlFor="sort-rating" className="cursor-pointer">Rating (high → low)</Label>
+                <Label htmlFor="sort-rating" className="cursor-pointer">Rating: High to Low</Label>
               </div>
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="distance" id="sort-distance" />
-                <Label htmlFor="sort-distance" className="flex items-center gap-1 cursor-pointer">
-                  <MapPin className="h-3.5 w-3.5" />
-                  Distance (near → far)
-                </Label>
+                <Label htmlFor="sort-distance" className="cursor-pointer">Distance</Label>
               </div>
             </RadioGroup>
 
             {draft.sortBy === 'distance' && (
               <div className="ml-6 space-y-3">
                 {hasLocation ? (
-                  <p className="text-xs text-green-600 flex items-center gap-1">
+                  <p className="text-xs text-success flex items-center gap-1">
                     <Navigation className="h-3 w-3" /> Location set
                   </p>
                 ) : (
@@ -261,7 +258,7 @@ export function SearchFilters({
           )}
         </div>
 
-        <SheetFooter className="flex-row gap-2 pt-4 border-t">
+        <SheetFooter className="flex-row gap-2 pt-4 border-t border-white/20">
           <Button variant="outline" className="flex-1" onClick={resetFilters}>Reset</Button>
           <Button className="flex-1" onClick={applyFilters}>Apply</Button>
         </SheetFooter>

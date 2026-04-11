@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden bg-gradient-hero">
+    <section className="relative min-h-[680px] flex items-center justify-center overflow-hidden bg-gradient-hero">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.2),transparent_45%)]" />
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6bTAgMTBjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -21,20 +21,19 @@ export const Hero = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Button 
+            <Button
               variant="hero" 
               size="lg"
               onClick={() => navigate("/search")}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto min-w-48"
             >
-              <Search className="h-5 w-5" />
               Find Businesses
             </Button>
-            <Button 
+            <Button
               variant="outline" 
               size="lg"
               onClick={() => navigate("/register/1")}
-              className="w-full sm:w-auto border-border text-foreground hover:bg-muted"
+              className="w-full sm:w-auto min-w-48"
             >
               Register Your Business
             </Button>

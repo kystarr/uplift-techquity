@@ -1,23 +1,23 @@
-import { Search, Shield, MessageCircle, TrendingUp } from "lucide-react";
+import { ShieldCheck, MessagesSquare, Sparkles, BarChart3 } from "lucide-react";
 
 const features = [
   {
-    icon: Search,
+    icon: Sparkles,
     title: "Smart Discovery",
     description: "Find businesses by location, category, voice search, or even upload photos to discover similar services.",
   },
   {
-    icon: Shield,
+    icon: ShieldCheck,
     title: "Verified & Trusted",
     description: "Every business goes through verification to ensure authenticity and protect our community.",
   },
   {
-    icon: MessageCircle,
+    icon: MessagesSquare,
     title: "Direct Connection",
     description: "Message business owners directly, leave reviews, and share your favorite finds on social media.",
   },
   {
-    icon: TrendingUp,
+    icon: BarChart3,
     title: "Growth Analytics",
     description: "Business owners get insights on customer trends, ratings, and visibility to help grow their enterprise.",
   },
@@ -25,7 +25,7 @@ const features = [
 
 export const FeaturesSection = () => {
   return (
-    <section className="py-20 bg-muted/30">
+    <section className="py-28">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
@@ -42,9 +42,9 @@ export const FeaturesSection = () => {
             return (
               <div 
                 key={index}
-                className="bg-card rounded-lg p-6 shadow-md hover:shadow-xl transition-smooth border border-border"
+                className="glass-panel rounded-2xl p-7 hover:-translate-y-1"
               >
-                <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center mb-4">
+                <div className="h-12 w-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-5">
                   <Icon className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">
