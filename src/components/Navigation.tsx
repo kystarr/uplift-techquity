@@ -42,7 +42,7 @@ export const Navigation = () => {
       ];
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/30 bg-glass backdrop-blur-[var(--blur-glass)] shadow-glass">
+    <nav className="sticky top-0 z-50 mx-3 mt-3 max-w-[1600px] rounded-b-3xl border border-white/25 border-t-0 bg-glass backdrop-blur-[var(--blur-glass)] shadow-[0_10px_40px_-12px_hsl(220_40%_20%/0.12)] dark:shadow-[0_12px_48px_-8px_hsl(0_0%_0%/0.45)] motion-reduce:shadow-glass sm:mx-6 lg:mx-auto">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           <div className="flex items-center gap-3 min-w-0">
