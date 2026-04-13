@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FaviconSync } from "@/components/FaviconSync";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { RequireRole } from "@/components/auth";
 import { ThemeProvider } from "@/components/theme-provider";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
@@ -19,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import { UpliftChatAssistant } from "@/components/chat/UpliftChatAssistant";
 import { AppShell } from "@/components/AppShell";
+import { MessageNotificationListener } from "@/components/messaging/MessageNotificationListener";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +31,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <FaviconSync />
+            <MessageNotificationListener />
             <Routes>
               <Route element={<AppShell />}>
                 <Route path="/" element={<Index />} />
@@ -39,7 +40,7 @@ const App = () => (
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/favorites" element={<Navigate to="/profile/favorites" replace />} />
                 <Route path="/messages" element={<MessagesInbox />} />
-                <Route path="/messages/:businessId" element={<Messages />} />
+                <Route path="/messages/:conversationId" element={<Messages />} />
                 <Route path="/register" element={<Navigate to="/register/1" replace />} />
                 <Route path="/register/:step" element={<RegisterBusiness />} />
                 <Route path="/business/:id" element={<BusinessProfilePage />} />

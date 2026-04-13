@@ -1,106 +1,131 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Star, MapPin, BadgeCheck } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-
-interface Conversation {
-  id: string;
-  businessId: string;
-  businessName: string;
-  businessImage: string;
-  businessRating: number;
-  businessDistance: string;
-  verified: boolean;
-  lastMessage: string;
-  timestamp: Date;
-  unread: boolean;
-}
+import { Button } from "@/components/ui/button";
+import { useMessages } from "@/hooks/useMessages";
+import { DeleteConversationForMeDialog } from "@/components/messaging/DeleteConversationForMeDialog";
+import { ConversationChatMenu } from "@/components/messaging/ConversationChatMenu";
+import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { requestDesktopMessageNotifications } from "@/lib/messaging-notifications";
+import { useAuth } from "@/contexts/AuthContext";
+import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
+import { getConversationCounterparty, getViewerUnreadCount } from "@/lib/messaging-counterparty";
 
 const MessagesInbox = () => {
   const navigate = useNavigate();
+  const { user, isBusiness } = useAuth();
+  const { backendRow } = useOwnerBusiness();
+  const ownBusinessId = backendRow?.id ?? null;
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
+  const [muteBusyId, setMuteBusyId] = useState<string | null>(null);
+  const [desktopNotifBusy, setDesktopNotifBusy] = useState(false);
+  const {
+    conversations,
+    loading,
+    error,
+    hideConversationForMe,
+    setConversationMuted,
+  } = useMessages();
 
-  const conversations: Conversation[] = [
-    {
-      id: "1",
-      businessId: "essence-hair",
-      businessName: "Essence Hair Studio",
-      businessImage: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400",
-      businessRating: 4.8,
-      businessDistance: "1.2 mi",
-      verified: true,
-      lastMessage: "Tuesday around 2pm would be perfect!",
-      timestamp: new Date(Date.now() - 2400000),
-      unread: false,
-    },
-    {
-      id: "2",
-      businessId: "soul-cafe",
-      businessName: "Soul Food Café",
-      businessImage: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400",
-      businessRating: 4.9,
-      businessDistance: "0.8 mi",
-      verified: true,
-      lastMessage: "We'd love to cater your event! Let me send you our menu options.",
-      timestamp: new Date(Date.now() - 7200000),
-      unread: true,
-    },
-    {
-      id: "3",
-      businessId: "wellness-spa",
-      businessName: "Serenity Wellness Spa",
-      businessImage: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400",
-      businessRating: 4.7,
-      businessDistance: "2.1 mi",
-      verified: false,
-      lastMessage: "Thank you for your interest! Our massage packages start at $85.",
-      timestamp: new Date(Date.now() - 86400000),
-      unread: false,
-    },
-    {
-      id: "4",
-      businessId: "creative-studio",
-      businessName: "Urban Canvas Art Studio",
-      businessImage: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400",
-      businessRating: 4.6,
-      businessDistance: "3.5 mi",
-      verified: true,
-      lastMessage: "Classes are every Saturday at 10am. Would you like to reserve a spot?",
-      timestamp: new Date(Date.now() - 172800000),
-      unread: true,
-    },
-  ];
+  const showDesktopNotifPrompt =
+    typeof Notification !== "undefined" && Notification.permission === "default";
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.businessName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!user) return conversations;
+    if (!q) return conversations;
+    return conversations.filter((conv) => {
+      const { title } = getConversationCounterparty(conv, {
+        userId: user.userId,
+        isBusiness,
+        ownBusinessId,
+      });
+      const preview = (conv.lastMessage ?? "").toLowerCase();
+      return (
+        title.toLowerCase().includes(q) ||
+        preview.includes(q)
+      );
+    });
+  }, [conversations, searchQuery, user, isBusiness, ownBusinessId]);
 
-  const formatTimestamp = (date: Date) => {
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+  const formatRelativeTime = (dateStr?: string | null) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return null;
+    return formatDistanceToNow(d, { addSuffix: true });
+  };
 
-    if (diffInHours < 1) {
-      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      return `${diffInMinutes}m ago`;
-    } else if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
-    } else {
-      const diffInDays = Math.floor(diffInHours / 24);
-      return `${diffInDays}d ago`;
-    }
+  const handleConversationClick = (conversationId: string) => {
+    navigate(`/messages/${conversationId}`);
   };
 
   return (
     <div className="bg-background">
-      <div className="container max-w-4xl mx-auto px-4 py-10">
-        <div className="mb-6 glass-panel rounded-2xl p-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Messages</h1>
-          <p className="text-muted-foreground">
-            Chat with businesses you're interested in
-          </p>
+      <DeleteConversationForMeDialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTargetId(null);
+        }}
+        pending={deletePending}
+        onConfirm={async () => {
+          if (!deleteTargetId) return;
+          setDeletePending(true);
+          try {
+            await hideConversationForMe(deleteTargetId);
+          } catch (err) {
+            toast.error("Couldn't remove chat", {
+              description: err instanceof Error ? err.message : undefined,
+            });
+            throw err;
+          } finally {
+            setDeletePending(false);
+          }
+        }}
+      />
+
+      <div className="container max-w-4xl mx-auto px-4 py-8">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Messages</h1>
+            <p className="text-muted-foreground">
+              {isBusiness
+                ? "Reply to customers who messaged your business."
+                : "Chat with businesses you're interested in."}
+            </p>
+            {typeof Notification !== "undefined" && Notification.permission === "granted" && (
+              <p className="text-xs text-muted-foreground mt-2">Desktop notifications are enabled.</p>
+            )}
+          </div>
+          {showDesktopNotifPrompt && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 self-start"
+              disabled={desktopNotifBusy}
+              onClick={async () => {
+                setDesktopNotifBusy(true);
+                try {
+                  const p = await requestDesktopMessageNotifications();
+                  if (p === "granted") {
+                    toast.success("Desktop notifications enabled");
+                  } else if (p === "denied") {
+                    toast.error("Notifications are blocked in your browser settings.");
+                  }
+                } finally {
+                  setDesktopNotifBusy(false);
+                }
+              }}
+            >
+              {desktopNotifBusy ? "Requesting…" : "Enable desktop alerts"}
+            </Button>
+          )}
         </div>
 
         {/* Search Bar */}
@@ -117,75 +142,142 @@ const MessagesInbox = () => {
         {/* Conversations List */}
         <ScrollArea className="h-[calc(100vh-280px)]">
           <div className="space-y-2">
-            {filteredConversations.length > 0 ? (
-              filteredConversations.map((conversation) => (
-                <button
+            {error && (
+              <div className="p-4 bg-destructive/10 text-destructive rounded">
+                Error loading conversations: {error.message}
+              </div>
+            )}
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading conversations...</p>
+              </div>
+            ) : filteredConversations.length > 0 ? (
+              filteredConversations.map((conversation) => {
+                const counterparty =
+                  user != null
+                    ? getConversationCounterparty(conversation, {
+                        userId: user.userId,
+                        isBusiness,
+                        ownBusinessId,
+                      })
+                    : { title: conversation.businessName || "Conversation", image: conversation.businessImage ?? null };
+                const timeLabel = formatRelativeTime(conversation.lastMessageTimestamp);
+                const viewerUnread =
+                  user != null
+                    ? getViewerUnreadCount(conversation, {
+                        userId: user.userId,
+                        isBusiness,
+                        ownBusinessId,
+                      })
+                    : 0;
+                const isUnread = viewerUnread > 0;
+                return (
+                <div
                   key={conversation.id}
-                  onClick={() => navigate(`/messages/${conversation.businessId}`)}
-                  className={`w-full p-5 rounded-2xl border border-white/30 backdrop-blur-[var(--blur-glass)] transition-smooth hover:-translate-y-0.5 ${
-                    conversation.unread
-                      ? "bg-primary-light/60 border-primary/35"
-                      : "bg-glass hover:bg-white/45 dark:hover:bg-white/10"
+                  className={`relative rounded-lg border border-border transition-all hover:shadow-md ${
+                    isUnread
+                      ? "border-l-4 border-l-primary bg-primary/5 shadow-sm"
+                      : "bg-card hover:bg-accent/50"
                   }`}
                 >
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-14 w-14 shrink-0">
-                      <AvatarImage
-                        src={conversation.businessImage}
-                        alt={conversation.businessName}
-                      />
-                      <AvatarFallback>{conversation.businessName[0]}</AvatarFallback>
-                    </Avatar>
+                  <div className="absolute right-1 top-1 z-10">
+                    <ConversationChatMenu
+                      openable
+                      participantMuted={conversation.participantMuted}
+                      muteBusy={muteBusyId === conversation.id}
+                      onToggleMute={async () => {
+                        try {
+                          setMuteBusyId(conversation.id);
+                          await setConversationMuted(conversation.id, !conversation.participantMuted);
+                          toast.success(
+                            conversation.participantMuted
+                              ? "Conversation unmuted"
+                              : "Conversation muted — alerts paused for this chat"
+                          );
+                        } catch (e) {
+                          toast.error("Could not update mute", {
+                            description: e instanceof Error ? e.message : undefined,
+                          });
+                        } finally {
+                          setMuteBusyId(null);
+                        }
+                      }}
+                      onRequestDelete={() => setDeleteTargetId(conversation.id)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleConversationClick(conversation.id)}
+                    className="flex w-full min-w-0 items-start gap-4 p-4 pr-14 pt-10 text-left hover:bg-accent/30 sm:pt-4"
+                  >
+                    <div
+                      className={`relative shrink-0 ${isUnread ? "ring-2 ring-primary/35 ring-offset-2 ring-offset-background rounded-full" : ""}`}
+                    >
+                      <Avatar className="h-14 w-14">
+                        <AvatarImage
+                          src={counterparty.image || undefined}
+                          alt={counterparty.title}
+                        />
+                        <AvatarFallback>{(counterparty.title || "C")[0]}</AvatarFallback>
+                      </Avatar>
+                      {isUnread && (
+                        <span
+                          className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-background bg-primary shadow-sm"
+                          title="Unread messages"
+                          aria-hidden
+                        />
+                      )}
+                    </div>
 
                     <div className="flex-1 min-w-0 text-left">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="mb-1 flex items-center gap-2">
                         <h3
-                          className={`font-semibold truncate ${
-                            conversation.unread ? "text-foreground" : "text-foreground"
+                          className={`truncate ${
+                            isUnread
+                              ? "text-base font-bold text-foreground"
+                              : "text-base font-semibold text-foreground"
                           }`}
                         >
-                          {conversation.businessName}
+                          {counterparty.title}
                         </h3>
-                        {conversation.verified && (
-                          <Badge className="shrink-0 bg-success text-success-foreground border-0 p-1.5" aria-label="Verified business">
-                            <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-3 w-3 fill-secondary text-secondary" />
-                          <span>{conversation.businessRating}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-primary">
-                          <MapPin className="h-3 w-3 text-primary" />
-                          <span className="text-primary">{conversation.businessDistance}</span>
-                        </div>
                       </div>
 
                       <p
-                        className={`text-sm truncate ${
-                          conversation.unread
-                            ? "font-medium text-foreground"
-                            : "text-muted-foreground"
+                        className={`truncate text-sm leading-snug ${
+                          isUnread
+                            ? "font-bold text-foreground"
+                            : "font-normal text-muted-foreground"
                         }`}
                       >
-                        {conversation.lastMessage}
+                        {conversation.lastMessage?.trim() ||
+                          (conversation.lastMessageTimestamp
+                            ? "Attachment or media"
+                            : "No messages yet")}
                       </p>
                     </div>
 
-                    <div className="shrink-0 flex flex-col items-end gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {formatTimestamp(conversation.timestamp)}
-                      </span>
-                      {conversation.unread && (
-                        <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                    <div className="shrink-0 flex flex-col items-end gap-2 pt-1">
+                      {timeLabel ? (
+                        <span
+                          className={`text-xs ${
+                            isUnread ? "font-semibold text-primary" : "text-muted-foreground"
+                          }`}
+                        >
+                          {timeLabel}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground opacity-50">—</span>
+                      )}
+                      {viewerUnread > 0 && (
+                        <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                          {viewerUnread > 99 ? "99+" : viewerUnread}
+                        </div>
                       )}
                     </div>
-                  </div>
-                </button>
-              ))
+                  </button>
+                </div>
+                );
+              })
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No conversations found</p>
