@@ -1023,6 +1023,20 @@
               "isRequired": false,
               "attributes": []
             },
+            "participantHidden": {
+              "name": "participantHidden",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "participantMuted": {
+              "name": "participantMuted",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
             "createdAt": {
               "name": "createdAt",
               "isArray": false,

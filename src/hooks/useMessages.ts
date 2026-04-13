@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { amplifyDataClient } from '@/amplifyDataClient';
 import { getCurrentUser } from 'aws-amplify/auth';
+import { UPLIFT_REFRESH_CONVERSATIONS_EVENT } from '@/lib/messaging-events';
 
 function formatModelErrors(errors?: Array<{ message?: string }>): string | null {
   if (!errors || errors.length === 0) return null;
@@ -11,6 +12,9 @@ function formatModelErrors(errors?: Array<{ message?: string }>): string | null 
     .trim();
   return message || null;
 }
+
+/** URL segment for compose UI before a `Conversation` row exists in the backend. */
+export const MESSAGES_DRAFT_SEGMENT = 'new';
 
 function getModelOrThrow(modelName: 'Conversation' | 'Message') {
   const model = (amplifyDataClient.models as any)?.[modelName];
@@ -43,6 +47,7 @@ export interface ConversationItem {
   lastMessage?: string | null;
   lastMessageTimestamp?: string | null;
   unreadCount: number;
+  participantMuted: boolean;
 }
 
 export interface UseMessagesResult {
@@ -54,6 +59,11 @@ export interface UseMessagesResult {
   fetchMessages: (conversationId: string) => Promise<void>;
   createConversation: (businessId: string, businessName: string, businessImage?: string) => Promise<string>;
   markConversationAsRead: (conversationId: string) => Promise<void>;
+  /** Hide conversation for the current user only (soft delete on participant side). */
+  hideConversationForMe: (conversationId: string) => Promise<void>;
+  setConversationMuted: (conversationId: string, muted: boolean) => Promise<void>;
+  /** Clear loaded messages/errors (e.g. when opening a draft thread). */
+  resetThreadView: () => void;
 }
 
 export function useMessages(): UseMessagesResult {
@@ -62,15 +72,16 @@ export function useMessages(): UseMessagesResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchConversations = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const fetchConversations = useCallback(async (options?: { quiet?: boolean }) => {
+    const quiet = options?.quiet === true;
+    if (!quiet) {
+      setLoading(true);
+      setError(null);
+    }
     try {
-      // First check if user is authenticated
       const user = await getCurrentUser();
       if (!user) {
         setConversations([]);
-        setLoading(false);
         return;
       }
 
@@ -87,27 +98,33 @@ export function useMessages(): UseMessagesResult {
 
       if (!res || !res.data) {
         setConversations([]);
-        setLoading(false);
         return;
       }
 
-      const items: ConversationItem[] = res.data.map((c: any): ConversationItem => ({
-        id: c.id,
-        participantId: c.participantId,
-        businessId: c.businessId,
-        businessName: c.businessName ?? null,
-        businessImage: c.businessImage ?? null,
-        lastMessage: c.lastMessage ?? null,
-        lastMessageTimestamp: c.lastMessageTimestamp ?? null,
-        unreadCount: c.unreadCount ?? 0,
-      }));
+      const items: ConversationItem[] = res.data
+        .filter((c: any) => !c.participantHidden)
+        .map((c: any): ConversationItem => ({
+          id: c.id,
+          participantId: c.participantId,
+          businessId: c.businessId,
+          businessName: c.businessName ?? null,
+          businessImage: c.businessImage ?? null,
+          lastMessage: c.lastMessage ?? null,
+          lastMessageTimestamp: c.lastMessageTimestamp ?? null,
+          unreadCount: c.unreadCount ?? 0,
+          participantMuted: c.participantMuted === true,
+        }));
       setConversations(items);
     } catch (err) {
       console.error('Error fetching conversations:', err);
-      setConversations([]);
-      setError(err instanceof Error ? err : new Error('Failed to fetch conversations'));
+      if (!quiet) {
+        setConversations([]);
+        setError(err instanceof Error ? err : new Error('Failed to fetch conversations'));
+      }
     } finally {
-      setLoading(false);
+      if (!quiet) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -115,12 +132,26 @@ export function useMessages(): UseMessagesResult {
     fetchConversations();
   }, [fetchConversations]);
 
+  useEffect(() => {
+    const onRefresh = () => {
+      void fetchConversations({ quiet: true });
+    };
+    window.addEventListener(UPLIFT_REFRESH_CONVERSATIONS_EVENT, onRefresh);
+    return () => window.removeEventListener(UPLIFT_REFRESH_CONVERSATIONS_EVENT, onRefresh);
+  }, [fetchConversations]);
+
+  const resetThreadView = useCallback(() => {
+    setMessages([]);
+    setError(null);
+    setLoading(false);
+  }, []);
+
   const fetchMessages = useCallback(async (conversationId: string) => {
     setLoading(true);
     setError(null);
     try {
       const user = await getCurrentUser();
-      if (!user || !conversationId) {
+      if (!user || !conversationId || conversationId === MESSAGES_DRAFT_SEGMENT) {
         setMessages([]);
         setLoading(false);
         return;
@@ -222,6 +253,15 @@ export function useMessages(): UseMessagesResult {
 
         setMessages((prev) => [...prev, newMessage]);
 
+        try {
+          sessionStorage.setItem(
+            'uplift:lastOwnMessage',
+            JSON.stringify({ conversationId, at: Date.now() })
+          );
+        } catch {
+          // ignore
+        }
+
         // Update conversation's last message
         const conv = conversations.find((c) => c.id === conversationId);
         if (conv) {
@@ -269,6 +309,16 @@ export function useMessages(): UseMessagesResult {
 
         const existing = existingRes?.data?.find((c: any) => c.participantId === user.userId);
         if (existing?.id) {
+          if (existing.participantHidden === true) {
+            const unhideRes = await conversationModel.update(
+              { id: existing.id, participantHidden: false },
+              { authMode: 'userPool' }
+            );
+            const unhideErr = formatModelErrors(unhideRes?.errors);
+            if (unhideErr) {
+              throw new Error(unhideErr);
+            }
+          }
           return existing.id;
         }
 
@@ -279,6 +329,8 @@ export function useMessages(): UseMessagesResult {
             businessName,
             businessImage: businessImage || undefined,
             unreadCount: 0,
+            participantHidden: false,
+            participantMuted: false,
           },
           { authMode: 'userPool' }
         );
@@ -301,6 +353,7 @@ export function useMessages(): UseMessagesResult {
           lastMessage: null,
           lastMessageTimestamp: null,
           unreadCount: 0,
+          participantMuted: false,
         };
         setConversations((prev) => [...prev, newConversation]);
         return res.data.id;
@@ -343,6 +396,56 @@ export function useMessages(): UseMessagesResult {
     }
   }, []);
 
+  const hideConversationForMe = useCallback(async (conversationId: string) => {
+    const user = await getCurrentUser();
+    if (!user || !conversationId) {
+      throw new Error('User not authenticated');
+    }
+
+    const conversationModel = getModelOrThrow('Conversation');
+
+    const res = await conversationModel.update(
+      {
+        id: conversationId,
+        participantHidden: true,
+      },
+      { authMode: 'userPool' }
+    );
+    const modelError = formatModelErrors(res?.errors);
+    if (modelError) {
+      throw new Error(modelError);
+    }
+
+    setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+    setMessages([]);
+    setError(null);
+  }, []);
+
+  const setConversationMuted = useCallback(async (conversationId: string, muted: boolean) => {
+    const user = await getCurrentUser();
+    if (!user || !conversationId) {
+      throw new Error('User not authenticated');
+    }
+
+    const conversationModel = getModelOrThrow('Conversation');
+
+    const res = await conversationModel.update(
+      {
+        id: conversationId,
+        participantMuted: muted,
+      },
+      { authMode: 'userPool' }
+    );
+    const modelError = formatModelErrors(res?.errors);
+    if (modelError) {
+      throw new Error(modelError);
+    }
+
+    setConversations((prev) =>
+      prev.map((c) => (c.id === conversationId ? { ...c, participantMuted: muted } : c))
+    );
+  }, []);
+
   return {
     conversations,
     messages,
@@ -352,5 +455,8 @@ export function useMessages(): UseMessagesResult {
     fetchMessages,
     createConversation,
     markConversationAsRead,
+    hideConversationForMe,
+    setConversationMuted,
+    resetThreadView,
   };
 }

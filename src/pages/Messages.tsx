@@ -1,41 +1,125 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Send, Paperclip, Star, MapPin } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Send, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Navigation } from "@/components/Navigation";
-import { useMessages } from "@/hooks/useMessages";
-import { useAuthenticator } from "@aws-amplify/ui-react";
+import { useMessages, MESSAGES_DRAFT_SEGMENT } from "@/hooks/useMessages";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { DeleteConversationForMeDialog } from "@/components/messaging/DeleteConversationForMeDialog";
+import { ConversationChatMenu } from "@/components/messaging/ConversationChatMenu";
+
+/** Passed from BusinessProfile when starting a thread so the header works before the inbox refetches. */
+export type MessagesLocationState = {
+  businessName?: string;
+  businessImage?: string;
+  businessId?: string;
+};
 
 const Messages = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { conversationId } = useParams<{ conversationId: string }>();
-  const { user } = useAuthenticator();
-  const { messages, loading, error, sendMessage, fetchMessages, conversations } = useMessages();
+  const { user } = useAuth();
+  const {
+    messages,
+    loading,
+    error,
+    sendMessage,
+    fetchMessages,
+    createConversation,
+    conversations,
+    resetThreadView,
+    hideConversationForMe,
+    setConversationMuted,
+  } = useMessages();
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+  const [muteBusy, setMuteBusy] = useState(false);
 
-  // Find the current conversation
-  const conversation = conversations.find((c) => c.id === conversationId);
+  const navState = (location.state ?? null) as MessagesLocationState | null;
+
+  const conversation = useMemo(() => {
+    if (conversationId === MESSAGES_DRAFT_SEGMENT) {
+      if (!navState?.businessId || !navState?.businessName) return undefined;
+      return {
+        id: MESSAGES_DRAFT_SEGMENT,
+        participantId: user?.userId ?? "",
+        businessId: navState.businessId,
+        businessName: navState.businessName,
+        businessImage: navState.businessImage ?? null,
+        lastMessage: null as string | null,
+        lastMessageTimestamp: null as string | null,
+        unreadCount: 0,
+        participantMuted: false,
+      };
+    }
+    const fromList = conversations.find((c) => c.id === conversationId);
+    if (fromList) return fromList;
+    if (!conversationId || !navState?.businessName) return undefined;
+    return {
+      id: conversationId,
+      participantId: user?.userId ?? "",
+      businessId: navState.businessId ?? "",
+      businessName: navState.businessName,
+      businessImage: navState.businessImage ?? null,
+      lastMessage: null as string | null,
+      lastMessageTimestamp: null as string | null,
+      unreadCount: 0,
+      participantMuted: false,
+    };
+  }, [conversations, conversationId, navState, user?.userId]);
 
   useEffect(() => {
-    if (conversationId) {
-      fetchMessages(conversationId);
+    if (!conversationId) return;
+    if (conversationId === MESSAGES_DRAFT_SEGMENT) {
+      resetThreadView();
+      return;
     }
-  }, [conversationId, fetchMessages]);
+    fetchMessages(conversationId);
+  }, [conversationId, fetchMessages, resetThreadView]);
 
   const handleSend = async () => {
     if (!messageText.trim() || !conversationId || sending) return;
 
     try {
       setSending(true);
-      await sendMessage(conversationId, messageText.trim());
+      let activeId = conversationId;
+      if (conversationId === MESSAGES_DRAFT_SEGMENT) {
+        if (!navState?.businessId || !navState?.businessName) {
+          toast.error("Missing business info", {
+            description: "Go back to the business profile and tap Message again.",
+          });
+          return;
+        }
+        activeId = await createConversation(
+          navState.businessId,
+          navState.businessName,
+          navState.businessImage ?? undefined
+        );
+      }
+      await sendMessage(activeId, messageText.trim());
+      if (conversationId === MESSAGES_DRAFT_SEGMENT && navState) {
+        navigate(`/messages/${activeId}`, {
+          replace: true,
+          state: {
+            businessId: navState.businessId,
+            businessName: navState.businessName,
+            businessImage: navState.businessImage,
+          },
+        });
+      }
       setMessageText("");
     } catch (err) {
-      console.error('Failed to send message:', err);
+      console.error("Failed to send message:", err);
+      toast.error("Could not send message", {
+        description: err instanceof Error ? err.message : undefined,
+      });
     } finally {
       setSending(false);
     }
@@ -47,15 +131,42 @@ const Messages = () => {
 
     try {
       setSending(true);
+      let activeId = conversationId;
+      if (conversationId === MESSAGES_DRAFT_SEGMENT) {
+        if (!navState?.businessId || !navState?.businessName) {
+          toast.error("Missing business info", {
+            description: "Go back to the business profile and tap Message again.",
+          });
+          return;
+        }
+        activeId = await createConversation(
+          navState.businessId,
+          navState.businessName,
+          navState.businessImage ?? undefined
+        );
+      }
       const url = URL.createObjectURL(file);
       const attachmentType = file.type.startsWith("image/") ? "image" : "file";
-      await sendMessage(conversationId, "", {
+      await sendMessage(activeId, "", {
         type: attachmentType,
         url,
         name: file.name,
       });
+      if (conversationId === MESSAGES_DRAFT_SEGMENT && navState) {
+        navigate(`/messages/${activeId}`, {
+          replace: true,
+          state: {
+            businessId: navState.businessId,
+            businessName: navState.businessName,
+            businessImage: navState.businessImage,
+          },
+        });
+      }
     } catch (err) {
-      console.error('Failed to upload file:', err);
+      console.error("Failed to upload file:", err);
+      toast.error("Could not send attachment", {
+        description: err instanceof Error ? err.message : undefined,
+      });
     } finally {
       setSending(false);
     }
@@ -70,9 +181,34 @@ const Messages = () => {
     });
   };
 
+  const canOpenThreadMenu =
+    Boolean(conversationId) &&
+    conversationId !== MESSAGES_DRAFT_SEGMENT &&
+    Boolean(conversation);
+
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-background">
       <Navigation />
+      <DeleteConversationForMeDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        pending={deletePending}
+        onConfirm={async () => {
+          if (!conversationId || conversationId === MESSAGES_DRAFT_SEGMENT) return;
+          setDeletePending(true);
+          try {
+            await hideConversationForMe(conversationId);
+            navigate("/messages");
+          } catch (err) {
+            toast.error("Couldn't remove chat", {
+              description: err instanceof Error ? err.message : undefined,
+            });
+            throw err; // Dialog stays open (see DeleteConversationForMeDialog).
+          } finally {
+            setDeletePending(false);
+          }
+        }}
+      />
       {/* Header with Business Info */}
       <div className="border-b border-border bg-card">
         <div className="container max-w-4xl mx-auto px-4 py-4">
@@ -87,7 +223,11 @@ const Messages = () => {
             </Button>
 
             {!conversation ? (
-              <div className="text-muted-foreground">Loading conversation...</div>
+              <div className="text-muted-foreground">
+                {conversationId === MESSAGES_DRAFT_SEGMENT
+                  ? "Open Message from a business profile to start chatting."
+                  : "Loading conversation..."}
+              </div>
             ) : (
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Avatar className="h-12 w-12 shrink-0">
@@ -102,6 +242,32 @@ const Messages = () => {
                     </h2>
                   </div>
                 </div>
+                {canOpenThreadMenu && (
+                  <ConversationChatMenu
+                    openable
+                    participantMuted={conversation.participantMuted}
+                    muteBusy={muteBusy}
+                    onToggleMute={async () => {
+                      if (!conversationId || conversationId === MESSAGES_DRAFT_SEGMENT) return;
+                      try {
+                        setMuteBusy(true);
+                        await setConversationMuted(conversationId, !conversation.participantMuted);
+                        toast.success(
+                          conversation.participantMuted
+                            ? "Conversation unmuted"
+                            : "Conversation muted — alerts paused for this chat"
+                        );
+                      } catch (e) {
+                        toast.error("Could not update mute", {
+                          description: e instanceof Error ? e.message : undefined,
+                        });
+                      } finally {
+                        setMuteBusy(false);
+                      }
+                    }}
+                    onRequestDelete={() => setDeleteOpen(true)}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -109,7 +275,7 @@ const Messages = () => {
       </div>
 
       {/* Messages Area */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="container max-w-4xl mx-auto px-4 py-6">
           {error && (
             <div className="p-4 mb-4 bg-destructive/10 text-destructive rounded">
@@ -117,7 +283,7 @@ const Messages = () => {
             </div>
           )}
           <div className="space-y-4">
-            {loading ? (
+            {loading && conversationId !== MESSAGES_DRAFT_SEGMENT ? (
               <div className="text-center text-muted-foreground">Loading messages...</div>
             ) : messages.length === 0 ? (
               <div className="text-center text-muted-foreground">No messages yet. Start the conversation!</div>
@@ -200,13 +366,13 @@ const Messages = () => {
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSend()}
-              disabled={sending || !conversationId}
+              disabled={sending || !conversationId || !conversation}
               className="flex-1"
             />
 
             <Button
               onClick={handleSend}
-              disabled={!messageText.trim() || sending || !conversationId}
+              disabled={!messageText.trim() || sending || !conversationId || !conversation}
               className="shrink-0"
             >
               <Send className="h-4 w-4" />

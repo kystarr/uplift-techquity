@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FaviconSync } from "@/components/FaviconSync";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { RequireRole } from "@/components/auth";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Auth from "./pages/Auth";
@@ -17,6 +16,7 @@ import BusinessProfilePage from "./pages/BusinessProfile";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import { UpliftChatAssistant } from "@/components/chat/UpliftChatAssistant";
+import { MessageNotificationListener } from "@/components/messaging/MessageNotificationListener";
 
 const queryClient = new QueryClient();
 
@@ -26,8 +26,9 @@ const App = () => (
       <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+        <BrowserRouter>
         <FaviconSync />
+        <MessageNotificationListener />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<Search />} />

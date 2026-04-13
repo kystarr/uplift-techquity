@@ -221,6 +221,10 @@ const schema = a.schema({
     lastMessage: a.string(),
     lastMessageTimestamp: a.datetime(),
     unreadCount: a.integer().default(0),
+    /** Customer hides thread on their side only; business-facing views unaffected. */
+    participantHidden: a.boolean().default(false),
+    /** When true, alerts/toasts for new activity on this thread are suppressed for the participant. */
+    participantMuted: a.boolean().default(false),
   }).authorization((allow) => [
     allow.owner().to(['read', 'create', 'update']),
     allow.authenticated().to(['read', 'update']),

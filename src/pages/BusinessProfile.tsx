@@ -1,9 +1,9 @@
 import { useParams } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBusinessProfile } from "@/hooks/useBusinessProfile";
 import { useReviews } from "@/hooks/useReviews";
-import { useMessages } from "@/hooks/useMessages";
+import { useMessages, MESSAGES_DRAFT_SEGMENT } from "@/hooks/useMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import { BusinessProfileLayout } from "@/components/business-profile/BusinessProfileLayout";
 import { BusinessProfileSkeleton } from "@/components/business-profile/BusinessProfileSkeleton";
@@ -22,16 +22,15 @@ export default function BusinessProfilePage() {
   const { user } = useAuth();
   const { business, loading, error, refetch } = useBusinessProfile(id);
   const { reviews, submitting, submitReview } = useReviews(id);
-  const { conversations, createConversation } = useMessages();
-  const [startingConversation, setStartingConversation] = useState(false);
+  const { conversations } = useMessages();
 
   const existingConversationId = useMemo(() => {
     if (!business) return null;
     return conversations.find((c) => c.businessId === business.id)?.id ?? null;
   }, [business, conversations]);
 
-  const handleMessageBusiness = async () => {
-    if (!business || startingConversation) return;
+  const handleMessageBusiness = () => {
+    if (!business) return;
 
     if (!user) {
       toast.info("Please sign in to message this business.");
@@ -39,20 +38,19 @@ export default function BusinessProfilePage() {
       return;
     }
 
-    try {
-      setStartingConversation(true);
+    const state = {
+      businessName: business.name,
+      businessImage: business.images[0],
+      businessId: business.id,
+    };
 
-      const conversationId =
-        existingConversationId ??
-        (await createConversation(business.id, business.name, business.images[0]));
-
-      navigate(`/messages/${conversationId}`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Could not start conversation";
-      toast.error("Unable to message business", { description: msg });
-    } finally {
-      setStartingConversation(false);
+    if (existingConversationId) {
+      navigate(`/messages/${existingConversationId}`, { state });
+      return;
     }
+
+    // No DB row until the user sends their first message.
+    navigate(`/messages/${MESSAGES_DRAFT_SEGMENT}`, { state });
   };
 
   if (loading) {
@@ -96,7 +94,6 @@ export default function BusinessProfilePage() {
         onSubmitReview={submitReview}
         submittingReview={submitting}
         onMessageBusiness={handleMessageBusiness}
-        messagingInProgress={startingConversation}
         backHref="/search"
       />
     </div>
