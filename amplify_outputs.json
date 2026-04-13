@@ -981,6 +981,20 @@
               "isRequired": true,
               "attributes": []
             },
+            "participantName": {
+              "name": "participantName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "participantAvatarUrl": {
+              "name": "participantAvatarUrl",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
             "businessId": {
               "name": "businessId",
               "isArray": false,
@@ -1018,6 +1032,13 @@
             },
             "unreadCount": {
               "name": "unreadCount",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "businessUnreadCount": {
+              "name": "businessUnreadCount",
               "isArray": false,
               "type": "Int",
               "isRequired": false,

@@ -3,6 +3,8 @@ import { useLocation } from "react-router-dom";
 import { getCurrentUser } from "aws-amplify/auth";
 import { amplifyDataClient } from "@/amplifyDataClient";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
+import { getViewerUnreadCount } from "@/lib/messaging-counterparty";
 import { toast } from "sonner";
 import { UPLIFT_REFRESH_CONVERSATIONS_EVENT } from "@/lib/messaging-events";
 
@@ -11,9 +13,13 @@ const MAX_TOASTS_PER_TICK = 2;
 
 type ConvRow = {
   id: string;
+  participantId?: string | null;
+  businessId?: string | null;
+  participantName?: string | null;
   lastMessage?: string | null;
   lastMessageTimestamp?: string | null;
   unreadCount?: number | null;
+  businessUnreadCount?: number | null;
   participantMuted?: boolean | null;
   participantHidden?: boolean | null;
   businessName?: string | null;
@@ -32,7 +38,9 @@ function getConversationModel() {
  * when a thread updates while the user is not actively viewing that chat.
  */
 export function MessageNotificationListener() {
-  const { user } = useAuth();
+  const { user, isBusiness } = useAuth();
+  const { backendRow } = useOwnerBusiness();
+  const ownBusinessId = backendRow?.id ?? null;
   const location = useLocation();
   const pathRef = useRef(location.pathname);
   pathRef.current = location.pathname;
@@ -44,13 +52,23 @@ export function MessageNotificationListener() {
     let snap: Snapshot | null = null;
     let timer: ReturnType<typeof setInterval> | undefined;
 
-    const toSnapshot = (rows: ConvRow[]): Snapshot => {
+    const toSnapshot = (rows: ConvRow[], me: string): Snapshot => {
       const s: Snapshot = {};
       for (const row of rows) {
         s[row.id] = {
           lm: row.lastMessage ?? null,
           ts: row.lastMessageTimestamp ?? null,
-          unread: row.unreadCount ?? 0,
+          unread: getViewerUnreadCount(
+            {
+              participantId: row.participantId ?? "",
+              businessId: row.businessId ?? "",
+              businessName: row.businessName,
+              participantName: row.participantName,
+              unreadCount: row.unreadCount,
+              businessUnreadCount: row.businessUnreadCount,
+            },
+            { userId: me, isBusiness, ownBusinessId }
+          ),
         };
       }
       return s;
@@ -58,8 +76,10 @@ export function MessageNotificationListener() {
 
     const tick = async () => {
       if (cancelled) return;
+      let me: string;
       try {
-        await getCurrentUser();
+        const u = await getCurrentUser();
+        me = u.userId;
       } catch {
         snap = null;
         return;
@@ -70,7 +90,7 @@ export function MessageNotificationListener() {
 
       const res = await model.list({ authMode: "userPool" });
       const rows = (res?.data ?? []).filter((c) => !c.participantHidden);
-      const nextSnap = toSnapshot(rows);
+      const nextSnap = toSnapshot(rows, me);
 
       const prev = snap;
       if (prev) {
@@ -94,10 +114,21 @@ export function MessageNotificationListener() {
 
           const p = prev[row.id];
           if (!p) continue;
+          const rowUnread = getViewerUnreadCount(
+            {
+              participantId: row.participantId ?? "",
+              businessId: row.businessId ?? "",
+              businessName: row.businessName,
+              participantName: row.participantName,
+              unreadCount: row.unreadCount,
+              businessUnreadCount: row.businessUnreadCount,
+            },
+            { userId: me, isBusiness, ownBusinessId }
+          );
           const changed =
             p.lm !== (row.lastMessage ?? null) ||
             p.ts !== (row.lastMessageTimestamp ?? null) ||
-            p.unread !== (row.unreadCount ?? 0);
+            p.unread !== rowUnread;
           if (!changed) continue;
           anyChange = true;
 
@@ -108,7 +139,11 @@ export function MessageNotificationListener() {
 
           if (shown >= MAX_TOASTS_PER_TICK) continue;
           shown += 1;
-          const title = row.businessName || "New message";
+          const participantId = row.participantId ?? "";
+          const title =
+            me === participantId
+              ? row.businessName || "New message"
+              : row.participantName?.trim() || row.businessName || "New message";
           const body =
             (row.lastMessage && String(row.lastMessage).slice(0, 140)) || "You have a new message";
           toast.info(title, { description: body, duration: 6500 });
@@ -138,7 +173,7 @@ export function MessageNotificationListener() {
       cancelled = true;
       if (timer) clearInterval(timer);
     };
-  }, [user?.userId]);
+  }, [user?.userId, isBusiness, ownBusinessId]);
 
   return null;
 }

@@ -8,7 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Navigation } from "@/components/Navigation";
 import { useMessages, MESSAGES_DRAFT_SEGMENT } from "@/hooks/useMessages";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
+import { getConversationCounterparty, getViewerUnreadCount } from "@/lib/messaging-counterparty";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 import { DeleteConversationForMeDialog } from "@/components/messaging/DeleteConversationForMeDialog";
 import { ConversationChatMenu } from "@/components/messaging/ConversationChatMenu";
 
@@ -23,10 +26,12 @@ const Messages = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { conversationId } = useParams<{ conversationId: string }>();
-  const { user } = useAuth();
+  const { user, isBusiness } = useAuth();
+  const { backendRow } = useOwnerBusiness();
+  const ownBusinessId = backendRow?.id ?? null;
   const {
     messages,
-    loading,
+    messagesLoading,
     error,
     sendMessage,
     fetchMessages,
@@ -35,6 +40,7 @@ const Messages = () => {
     resetThreadView,
     hideConversationForMe,
     setConversationMuted,
+    markConversationAsRead,
   } = useMessages();
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
@@ -56,6 +62,7 @@ const Messages = () => {
         lastMessage: null as string | null,
         lastMessageTimestamp: null as string | null,
         unreadCount: 0,
+        businessUnreadCount: 0,
         participantMuted: false,
       };
     }
@@ -71,9 +78,44 @@ const Messages = () => {
       lastMessage: null as string | null,
       lastMessageTimestamp: null as string | null,
       unreadCount: 0,
+      businessUnreadCount: 0,
       participantMuted: false,
     };
   }, [conversations, conversationId, navState, user?.userId]);
+
+  const viewerUnread = useMemo(() => {
+    if (!conversation || !user) return 0;
+    return getViewerUnreadCount(conversation, {
+      userId: user.userId,
+      isBusiness,
+      ownBusinessId,
+    });
+  }, [conversation, user, isBusiness, ownBusinessId]);
+
+  const counterparty = useMemo(() => {
+    if (!conversation || !user) return null;
+    const viewer = { userId: user.userId, isBusiness, ownBusinessId };
+    const base = getConversationCounterparty(conversation, viewer);
+    const isOwnerViewingCustomer =
+      user.userId !== conversation.participantId &&
+      isBusiness &&
+      ownBusinessId &&
+      conversation.businessId === ownBusinessId;
+    if (isOwnerViewingCustomer && !conversation.participantName?.trim()) {
+      const fromMsg = messages
+        .find((m) => m.senderId === conversation.participantId)
+        ?.senderName?.trim();
+      if (fromMsg) return { ...base, title: fromMsg };
+    }
+    const isCustomerViewingBusiness = user.userId === conversation.participantId;
+    if (isCustomerViewingBusiness && !conversation.businessName?.trim()) {
+      const fromMsg = messages
+        .find((m) => m.senderId !== conversation.participantId)
+        ?.senderName?.trim();
+      if (fromMsg) return { ...base, title: fromMsg };
+    }
+    return base;
+  }, [conversation, user, isBusiness, ownBusinessId, messages]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -83,6 +125,11 @@ const Messages = () => {
     }
     fetchMessages(conversationId);
   }, [conversationId, fetchMessages, resetThreadView]);
+
+  useEffect(() => {
+    if (!conversationId || conversationId === MESSAGES_DRAFT_SEGMENT) return;
+    void markConversationAsRead(conversationId);
+  }, [conversationId, markConversationAsRead]);
 
   const handleSend = async () => {
     if (!messageText.trim() || !conversationId || sending) return;
@@ -181,6 +228,13 @@ const Messages = () => {
     });
   };
 
+  const formatMessageAge = (iso: string | null | undefined) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    return formatDistanceToNow(d, { addSuffix: true });
+  };
+
   const canOpenThreadMenu =
     Boolean(conversationId) &&
     conversationId !== MESSAGES_DRAFT_SEGMENT &&
@@ -209,7 +263,7 @@ const Messages = () => {
           }
         }}
       />
-      {/* Header with Business Info */}
+      {/* Header: customer sees business; business owner sees customer */}
       <div className="border-b border-border bg-card">
         <div className="container max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
@@ -231,15 +285,23 @@ const Messages = () => {
             ) : (
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Avatar className="h-12 w-12 shrink-0">
-                  <AvatarImage src={conversation.businessImage || undefined} alt={conversation.businessName || 'Business'} />
-                  <AvatarFallback>{(conversation.businessName || 'B')[0]}</AvatarFallback>
+                  <AvatarImage
+                    src={counterparty?.image || undefined}
+                    alt={counterparty?.title || "Chat"}
+                  />
+                  <AvatarFallback>{(counterparty?.title || "C")[0]}</AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
                     <h2 className="font-semibold text-foreground truncate">
-                      {conversation.businessName || 'Business'}
+                      {counterparty?.title || "Chat"}
                     </h2>
+                    {viewerUnread > 0 && (
+                      <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                        Unread
+                      </span>
+                    )}
                   </div>
                 </div>
                 {canOpenThreadMenu && (
@@ -283,11 +345,9 @@ const Messages = () => {
             </div>
           )}
           <div className="space-y-4">
-            {loading && conversationId !== MESSAGES_DRAFT_SEGMENT ? (
+            {messagesLoading && conversationId !== MESSAGES_DRAFT_SEGMENT ? (
               <div className="text-center text-muted-foreground">Loading messages...</div>
-            ) : messages.length === 0 ? (
-              <div className="text-center text-muted-foreground">No messages yet. Start the conversation!</div>
-            ) : (
+            ) : messages.length > 0 ? (
               messages.map((message) => {
                 const isOwnMessage = message.senderId === user?.userId;
                 return (
@@ -334,6 +394,56 @@ const Messages = () => {
                   </div>
                 );
               })
+            ) : conversation &&
+              conversationId !== MESSAGES_DRAFT_SEGMENT &&
+              (conversation.lastMessage?.trim() || conversation.lastMessageTimestamp) ? (
+              <div
+                className={`mx-auto max-w-md rounded-lg border p-6 text-left ${
+                  viewerUnread > 0
+                    ? "border-primary/50 bg-primary/5 shadow-sm"
+                    : "border-border bg-muted/40"
+                }`}
+              >
+                <div className="mb-2 flex items-center gap-2">
+                  {viewerUnread > 0 && (
+                    <span
+                      className="inline-flex h-2 w-2 shrink-0 rounded-full bg-primary shadow-sm ring-2 ring-primary/25"
+                      aria-hidden
+                    />
+                  )}
+                  <p
+                    className={`text-xs uppercase tracking-wide ${
+                      viewerUnread > 0
+                        ? "font-bold text-primary"
+                        : "font-medium text-muted-foreground"
+                    }`}
+                  >
+                    {viewerUnread > 0 ? "Unread · latest message" : "Latest message"}
+                  </p>
+                </div>
+                <p
+                  className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                    viewerUnread > 0
+                      ? "font-bold text-foreground"
+                      : "font-normal text-foreground"
+                  }`}
+                >
+                  {conversation.lastMessage?.trim() || "Attachment or media"}
+                </p>
+                {formatMessageAge(conversation.lastMessageTimestamp) && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Last activity {formatMessageAge(conversation.lastMessageTimestamp)}
+                  </p>
+                )}
+                <p className="mt-4 text-xs text-muted-foreground">
+                  The full thread will show here when it finishes loading; you can still send a reply
+                  below.
+                </p>
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                No messages yet. Start the conversation!
+              </div>
             )}
           </div>
         </div>
