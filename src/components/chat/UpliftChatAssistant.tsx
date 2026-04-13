@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { createUpliftChatSession, isGeminiConfigured, sendUpliftMessage } from "@/lib/gemini-chat";
+import {
+  createUpliftChatSession,
+  getUpliftFallbackReply,
+  isGeminiConfigured,
+  sendUpliftMessage,
+} from "@/lib/gemini-chat";
 
 type UiMessage = { role: "user" | "assistant"; text: string };
 
@@ -39,21 +44,22 @@ export function UpliftChatAssistant() {
     async (raw: string) => {
       const text = raw.trim();
       if (!text || sending) return;
-      if (!configured) {
-        toast.error("Add VITE_GEMINI_API_KEY to your .env file to enable the assistant.");
-        return;
-      }
 
       setMessages((prev) => [...prev, { role: "user", text }]);
       setInput("");
       setSending(true);
 
       try {
-        if (!chatRef.current) {
-          chatRef.current = createUpliftChatSession();
+        if (configured) {
+          if (!chatRef.current) {
+            chatRef.current = createUpliftChatSession();
+          }
+          const reply = await sendUpliftMessage(chatRef.current, text);
+          setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+        } else {
+          const reply = getUpliftFallbackReply(text);
+          setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
         }
-        const reply = await sendUpliftMessage(chatRef.current, text);
-        setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Something went wrong.";
         toast.error("Assistant could not reply", { description: msg });
@@ -130,10 +136,9 @@ export function UpliftChatAssistant() {
 
           {!configured && (
             <p className="border-b border-border bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
-              Set <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">VITE_GEMINI_API_KEY</code> in{" "}
+              Running in local help mode. Set <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">VITE_GEMINI_API_KEY</code> in{" "}
               <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">.env</code> and restart{" "}
-              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">npm run dev</code>. Use a backend
-              proxy before shipping to production.
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">npm run dev</code> for Gemini responses.
             </p>
           )}
 
@@ -169,7 +174,7 @@ export function UpliftChatAssistant() {
                   <button
                     key={label}
                     type="button"
-                    disabled={sending || !configured}
+                    disabled={sending}
                     onClick={() => void sendText(label)}
                     className={cn(
                       "rounded-full border border-primary/40 bg-primary/5 px-3 py-1.5 text-left text-xs font-medium text-foreground",
@@ -187,14 +192,14 @@ export function UpliftChatAssistant() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about Uplift…"
-                disabled={sending || !configured}
+                disabled={sending}
                 className="min-w-0 flex-1 rounded-full border-border bg-muted/80"
                 aria-label="Message to assistant"
               />
               <Button
                 type="submit"
                 size="icon"
-                disabled={sending || !input.trim() || !configured}
+                disabled={sending || !input.trim()}
                 className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover"
                 aria-label="Send message"
               >

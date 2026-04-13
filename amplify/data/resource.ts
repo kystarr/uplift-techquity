@@ -215,12 +215,22 @@ const schema = a.schema({
    */
   Conversation: a.model({
     participantId: a.string().required(), // Customer user ID
+    /** Denormalized customer display for business-side inbox/thread headers. */
+    participantName: a.string(),
+    participantAvatarUrl: a.string(),
     businessId: a.string().required(),
     businessName: a.string(),
     businessImage: a.string(),
     lastMessage: a.string(),
     lastMessageTimestamp: a.datetime(),
+    /** Unread messages for the customer (`participantId`) when the business has sent. */
     unreadCount: a.integer().default(0),
+    /** Unread messages for the business owner when the customer has sent. */
+    businessUnreadCount: a.integer().default(0),
+    /** Customer hides thread on their side only; business-facing views unaffected. */
+    participantHidden: a.boolean().default(false),
+    /** When true, alerts/toasts for new activity on this thread are suppressed for the participant. */
+    participantMuted: a.boolean().default(false),
   }).authorization((allow) => [
     allow.owner().to(['read', 'create', 'update']),
     allow.authenticated().to(['read', 'update']),
