@@ -1531,6 +1531,115 @@
             }
           }
         },
+        "ChatAssistantTurn": {
+          "name": "ChatAssistantTurn",
+          "fields": {
+            "role": {
+              "name": "role",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            }
+          }
+        },
+        "AssistantBusinessCard": {
+          "name": "AssistantBusinessCard",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "name": {
+              "name": "name",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "category": {
+              "name": "category",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "rating": {
+              "name": "rating",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reviewCount": {
+              "name": "reviewCount",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true,
+              "attributes": []
+            },
+            "verified": {
+              "name": "verified",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": true,
+              "attributes": []
+            },
+            "city": {
+              "name": "city",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "state": {
+              "name": "state",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "imageUrl": {
+              "name": "imageUrl",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "AssistantChatReply": {
+          "name": "AssistantChatReply",
+          "fields": {
+            "reply": {
+              "name": "reply",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "referencedBusinesses": {
+              "name": "referencedBusinesses",
+              "isArray": true,
+              "type": {
+                "nonModel": "AssistantBusinessCard"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            }
+          }
+        },
         "AdminActivityEntry": {
           "name": "AdminActivityEntry",
           "fields": {
@@ -1648,6 +1757,43 @@
         }
       },
       "mutations": {
+        "chatWithAssistant": {
+          "name": "chatWithAssistant",
+          "isArray": false,
+          "type": {
+            "nonModel": "AssistantChatReply"
+          },
+          "isRequired": false,
+          "arguments": {
+            "message": {
+              "name": "message",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "history": {
+              "name": "history",
+              "isArray": true,
+              "type": {
+                "input": "ChatAssistantTurnInput"
+              },
+              "isRequired": false,
+              "isArrayNullable": true
+            },
+            "latitude": {
+              "name": "latitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false
+            },
+            "longitude": {
+              "name": "longitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false
+            }
+          }
+        },
         "submitModerationFlag": {
           "name": "submitModerationFlag",
           "isArray": false,
@@ -1853,6 +1999,25 @@
               "name": "userId",
               "isArray": false,
               "type": "ID",
+              "isRequired": true
+            }
+          }
+        }
+      },
+      "inputs": {
+        "ChatAssistantTurnInput": {
+          "name": "ChatAssistantTurnInput",
+          "attributes": {
+            "role": {
+              "name": "role",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
               "isRequired": true
             }
           }

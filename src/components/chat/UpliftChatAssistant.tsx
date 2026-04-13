@@ -1,20 +1,32 @@
 import { useCallback, useState } from "react";
-import { Bot, Loader2, Send } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Bot, Loader2, MapPin, Send, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { sendChatWithAssistantMessage } from "@/lib/chat-assistant";
+import {
+  sendChatWithAssistantMessage,
+  type AssistantBusinessCard,
+} from "@/lib/chat-assistant";
 
-type UiMessage = { role: "user" | "assistant"; text: string };
+type UiMessage = {
+  role: "user" | "assistant";
+  text: string;
+  referencedBusinesses?: AssistantBusinessCard[];
+};
 
 const SUGGESTED_PROMPTS = [
   "What businesses are on Uplift in my area?",
-  "What does verified mean here?",
+  "What is the highest rated business in my area?",
   "How can a business join Uplift?",
 ] as const;
+
+const FALLBACK_IMG =
+  "https://images.unsplash.com/photo-1497366216548-37526070297c?w=200&q=80";
 
 /**
  * Floating assistant: server-side Gemini + live APPROVED businesses snapshot (`chatWithAssistant`).
@@ -24,9 +36,37 @@ export function UpliftChatAssistant() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [sending, setSending] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const resetConversation = useCallback(() => {
     setMessages([]);
+  }, []);
+
+  const requestLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      toast.error("Location not supported", {
+        description: "Try typing your city or ZIP in the chat instead.",
+      });
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+        toast.success("Location shared", {
+          description: "Nearby-style answers will use this for sorting.",
+        });
+      },
+      () => {
+        setLocating(false);
+        toast.error("Could not get location", {
+          description: "Check browser permissions, or type a city or ZIP in the chat.",
+        });
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60_000 },
+    );
   }, []);
 
   const sendText = useCallback(
@@ -44,8 +84,14 @@ export function UpliftChatAssistant() {
       setSending(true);
 
       try {
-        const reply = await sendChatWithAssistantMessage(text, priorHistory);
-        setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+        const { reply, referencedBusinesses } = await sendChatWithAssistantMessage(text, priorHistory, {
+          latitude: userLocation?.lat,
+          longitude: userLocation?.lng,
+        });
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: reply, referencedBusinesses },
+        ]);
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Something went wrong.";
         toast.error("Assistant could not reply", { description: msg });
@@ -54,7 +100,7 @@ export function UpliftChatAssistant() {
         setSending(false);
       }
     },
-    [messages, sending],
+    [messages, sending, userLocation],
   );
 
   const onSubmit = (e: React.FormEvent) => {
@@ -102,39 +148,107 @@ export function UpliftChatAssistant() {
               <div className="min-w-0 flex-1">
                 <SheetTitle className="text-base">Uplift assistant</SheetTitle>
                 <SheetDescription className="text-xs text-muted-foreground">
-                  Answers use live approved listings from Discover (via the backend). Deploy the Amplify sandbox and set the
-                  GEMINI_API_KEY secret.
+                  Share your location or name a city/ZIP for nearby picks.
                 </SheetDescription>
               </div>
             </div>
-            {messages.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <Button
                 type="button"
-                variant="ghost"
+                variant={userLocation ? "secondary" : "outline"}
                 size="sm"
-                className="h-8 self-start px-2 text-xs text-muted-foreground"
-                onClick={resetConversation}
+                className="h-8 gap-1.5 text-xs"
+                disabled={locating || sending}
+                onClick={() => requestLocation()}
               >
-                Clear chat
+                <MapPin className="h-3.5 w-3.5" aria-hidden />
+                {locating ? "Locating…" : userLocation ? "Location on" : "Share location"}
               </Button>
-            )}
+              {messages.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs text-muted-foreground"
+                  onClick={resetConversation}
+                >
+                  Clear chat
+                </Button>
+              )}
+            </div>
           </SheetHeader>
 
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
             {messages.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Try one of the suggestions below, or ask about businesses and locations on the platform.
+                Try a suggestion below, or ask about businesses. For &quot;near me&quot; questions, share location or say
+                where you are.
               </p>
             )}
             {messages.map((m, i) => (
               <div
                 key={`${i}-${m.role}`}
                 className={cn(
-                  "rounded-2xl px-3 py-2 text-sm leading-relaxed",
-                  m.role === "user" ? "ml-6 bg-primary/15 text-foreground" : "mr-4 bg-muted text-foreground",
+                  "space-y-2",
+                  m.role === "user" ? "ml-4" : "mr-1",
                 )}
               >
-                {m.text}
+                <div
+                  className={cn(
+                    "rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                    m.role === "user"
+                      ? "ml-2 bg-primary/15 text-foreground"
+                      : "bg-muted text-foreground",
+                  )}
+                >
+                  {m.text}
+                </div>
+                {m.role === "assistant" && m.referencedBusinesses && m.referencedBusinesses.length > 0 && (
+                  <div className="space-y-2 pl-0">
+                    {m.referencedBusinesses.map((b) => (
+                      <Link
+                        key={b.id}
+                        to={`/business/${b.id}`}
+                        className={cn(
+                          "flex gap-3 rounded-xl border border-border bg-card p-2.5 text-left shadow-sm",
+                          "transition-colors hover:bg-accent/50 hover:border-primary/30",
+                        )}
+                        onClick={() => setOpen(false)}
+                      >
+                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                          <img
+                            src={b.imageUrl || FALLBACK_IMG}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = FALLBACK_IMG;
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground">{b.name}</p>
+                          <p className="line-clamp-1 text-xs text-muted-foreground">{b.category}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-0.5">
+                              <Star className="h-3 w-3 fill-secondary text-secondary" aria-hidden />
+                              {b.rating.toFixed(1)} ({b.reviewCount})
+                            </span>
+                            {b.verified && (
+                              <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                                Verified
+                              </Badge>
+                            )}
+                            {(b.city || b.state) && (
+                              <span className="text-[11px]">
+                                {[b.city, b.state].filter(Boolean).join(", ")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             {sending && (

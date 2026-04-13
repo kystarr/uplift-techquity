@@ -72,8 +72,21 @@ const schema = a.schema({
     content: a.string().required(),
   }),
 
+  AssistantBusinessCard: a.customType({
+    id: a.id().required(),
+    name: a.string().required(),
+    category: a.string().required(),
+    rating: a.float().required(),
+    reviewCount: a.integer().required(),
+    verified: a.boolean().required(),
+    city: a.string(),
+    state: a.string(),
+    imageUrl: a.string(),
+  }),
+
   AssistantChatReply: a.customType({
     reply: a.string().required(),
+    referencedBusinesses: a.ref('AssistantBusinessCard').array(),
   }),
 
   AdminActivityEntry: a.customType({
@@ -275,9 +288,15 @@ const schema = a.schema({
     .arguments({
       message: a.string().required(),
       history: a.ref('ChatAssistantTurn').array(),
+      latitude: a.float(),
+      longitude: a.float(),
     })
     .returns(a.ref('AssistantChatReply'))
-    .authorization((allow) => [allow.authenticated(), allow.guest()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      allow.guest(),
+      allow.publicApiKey(),
+    ])
     .handler(a.handler.function(chatAssistant)),
 
   submitModerationFlag: a
