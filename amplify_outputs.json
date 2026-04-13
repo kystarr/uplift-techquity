@@ -963,41 +963,238 @@
             "primaryKeyFieldName": "id",
             "sortKeyFieldNames": []
           }
-        }
-      },
-      "enums": {},
-      "nonModels": {
-        "AssistantChatReply": {
-          "name": "AssistantChatReply",
+        },
+        "Conversation": {
+          "name": "Conversation",
           "fields": {
-            "reply": {
-              "name": "reply",
+            "id": {
+              "name": "id",
               "isArray": false,
-              "type": "String",
+              "type": "ID",
               "isRequired": true,
               "attributes": []
-            }
-          }
-        },
-        "ChatAssistantTurn": {
-          "name": "ChatAssistantTurn",
-          "fields": {
-            "role": {
-              "name": "role",
+            },
+            "participantId": {
+              "name": "participantId",
               "isArray": false,
               "type": "String",
               "isRequired": true,
               "attributes": []
             },
-            "content": {
-              "name": "content",
+            "businessId": {
+              "name": "businessId",
               "isArray": false,
               "type": "String",
               "isRequired": true,
               "attributes": []
+            },
+            "businessName": {
+              "name": "businessName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "businessImage": {
+              "name": "businessImage",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "lastMessage": {
+              "name": "lastMessage",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "lastMessageTimestamp": {
+              "name": "lastMessageTimestamp",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "unreadCount": {
+              "name": "unreadCount",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
             }
+          },
+          "syncable": true,
+          "pluralName": "Conversations",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "provider": "userPools",
+                    "ownerField": "owner",
+                    "allow": "owner",
+                    "operations": [
+                      "read",
+                      "create",
+                      "update"
+                    ],
+                    "identityClaim": "cognito:username"
+                  },
+                  {
+                    "allow": "private",
+                    "operations": [
+                      "read",
+                      "update"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
           }
         },
+        "Message": {
+          "name": "Message",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "conversationId": {
+              "name": "conversationId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "senderId": {
+              "name": "senderId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "senderName": {
+              "name": "senderName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "text": {
+              "name": "text",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "attachmentUrl": {
+              "name": "attachmentUrl",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "attachmentType": {
+              "name": "attachmentType",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "attachmentName": {
+              "name": "attachmentName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "Messages",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "provider": "userPools",
+                    "ownerField": "owner",
+                    "allow": "owner",
+                    "operations": [
+                      "create",
+                      "read"
+                    ],
+                    "identityClaim": "cognito:username"
+                  },
+                  {
+                    "allow": "private",
+                    "operations": [
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        }
+      },
+      "enums": {},
+      "nonModels": {
         "FlagTargetDetails": {
           "name": "FlagTargetDetails",
           "fields": {
@@ -1416,31 +1613,6 @@
         }
       },
       "mutations": {
-        "chatWithAssistant": {
-          "name": "chatWithAssistant",
-          "isArray": false,
-          "type": {
-            "nonModel": "AssistantChatReply"
-          },
-          "isRequired": false,
-          "arguments": {
-            "message": {
-              "name": "message",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true
-            },
-            "history": {
-              "name": "history",
-              "isArray": true,
-              "type": {
-                "input": "ChatAssistantTurn"
-              },
-              "isRequired": false,
-              "isArrayNullable": true
-            }
-          }
-        },
         "submitModerationFlag": {
           "name": "submitModerationFlag",
           "isArray": false,
