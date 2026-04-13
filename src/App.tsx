@@ -35,7 +35,7 @@ const App = () => (
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
             <Route path="/favorites" element={<Navigate to="/profile/favorites" replace />} />
           <Route path="/messages" element={<MessagesInbox />} />
-          <Route path="/messages/:businessId" element={<Messages />} />
+          <Route path="/messages/:conversationId" element={<Messages />} />
           <Route path="/register" element={<Navigate to="/register/1" replace />} />
           <Route path="/register/:step" element={<RegisterBusiness />} />
           <Route path="/business/:id" element={<BusinessProfilePage />} />

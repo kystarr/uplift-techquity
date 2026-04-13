@@ -2,6 +2,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { amplifyDataClient } from '@/amplifyDataClient';
 import { getCurrentUser } from 'aws-amplify/auth';
 
+function formatModelErrors(errors?: Array<{ message?: string }>): string | null {
+  if (!errors || errors.length === 0) return null;
+  const message = errors
+    .map((e) => e?.message)
+    .filter((m): m is string => Boolean(m && m.trim()))
+    .join('; ')
+    .trim();
+  return message || null;
+}
+
+function getModelOrThrow(modelName: 'Conversation' | 'Message') {
+  const model = (amplifyDataClient.models as any)?.[modelName];
+  if (!model) {
+    throw new Error(
+      `Messaging backend is not available (${modelName} model missing). Run backend sandbox/deploy and regenerate outputs.`
+    );
+  }
+  return model;
+}
+
 export interface MessageItem {
   id: string;
   conversationId: string;
@@ -54,9 +74,16 @@ export function useMessages(): UseMessagesResult {
         return;
       }
 
-      const res = await (amplifyDataClient.models as any)?.Conversation?.list({
+      const conversationModel = getModelOrThrow('Conversation');
+
+      const res = await conversationModel.list({
         authMode: 'userPool',
       });
+
+      const modelError = formatModelErrors(res?.errors);
+      if (modelError) {
+        throw new Error(modelError);
+      }
 
       if (!res || !res.data) {
         setConversations([]);
@@ -99,12 +126,19 @@ export function useMessages(): UseMessagesResult {
         return;
       }
 
-      const res = await (amplifyDataClient.models as any)?.Message?.list({
+      const messageModel = getModelOrThrow('Message');
+
+      const res = await messageModel.list({
         filter: {
           conversationId: { eq: conversationId },
         },
         authMode: 'userPool',
       });
+
+      const modelError = formatModelErrors(res?.errors);
+      if (modelError) {
+        throw new Error(modelError);
+      }
 
       if (!res || !res.data) {
         setMessages([]);
@@ -145,6 +179,9 @@ export function useMessages(): UseMessagesResult {
           throw new Error('User not authenticated or no conversation selected');
         }
 
+        const messageModel = getModelOrThrow('Message');
+        const conversationModel = getModelOrThrow('Conversation');
+
         const messageInput: any = {
           conversationId,
           senderId: user.userId,
@@ -158,9 +195,14 @@ export function useMessages(): UseMessagesResult {
           messageInput.attachmentName = attachment.name;
         }
 
-        const res = await (amplifyDataClient.models as any)?.Message?.create(messageInput, {
+        const res = await messageModel.create(messageInput, {
           authMode: 'userPool',
         });
+
+        const modelError = formatModelErrors(res?.errors);
+        if (modelError) {
+          throw new Error(modelError);
+        }
 
         if (!res || !res.data) {
           throw new Error('Failed to create message');
@@ -183,7 +225,7 @@ export function useMessages(): UseMessagesResult {
         // Update conversation's last message
         const conv = conversations.find((c) => c.id === conversationId);
         if (conv) {
-          await (amplifyDataClient.models as any)?.Conversation?.update(
+          const updateRes = await conversationModel.update(
             {
               id: conversationId,
               lastMessage: text || '[Attachment]',
@@ -191,6 +233,10 @@ export function useMessages(): UseMessagesResult {
             },
             { authMode: 'userPool' }
           );
+          const updateError = formatModelErrors(updateRes?.errors);
+          if (updateError) {
+            throw new Error(updateError);
+          }
         }
       } catch (err) {
         console.error('Error sending message:', err);
@@ -209,16 +255,38 @@ export function useMessages(): UseMessagesResult {
           throw new Error('User not authenticated');
         }
 
-        const res = await (amplifyDataClient.models as any)?.Conversation?.create(
+        const conversationModel = getModelOrThrow('Conversation');
+
+        // Reuse existing conversation to avoid accidental duplicates.
+        const existingRes = await conversationModel.list({
+          filter: { businessId: { eq: businessId } },
+          authMode: 'userPool',
+        });
+        const existingError = formatModelErrors(existingRes?.errors);
+        if (existingError) {
+          throw new Error(existingError);
+        }
+
+        const existing = existingRes?.data?.find((c: any) => c.participantId === user.userId);
+        if (existing?.id) {
+          return existing.id;
+        }
+
+        const res = await conversationModel.create(
           {
             participantId: user.userId,
             businessId,
             businessName,
-            businessImage: businessImage || null,
+            businessImage: businessImage || undefined,
             unreadCount: 0,
           },
           { authMode: 'userPool' }
         );
+
+        const modelError = formatModelErrors(res?.errors);
+        if (modelError) {
+          throw new Error(modelError);
+        }
 
         if (!res || !res.data) {
           throw new Error('Failed to create conversation');
@@ -252,13 +320,19 @@ export function useMessages(): UseMessagesResult {
         return;
       }
 
-      await (amplifyDataClient.models as any)?.Conversation?.update(
+      const conversationModel = getModelOrThrow('Conversation');
+
+      const res = await conversationModel.update(
         {
           id: conversationId,
           unreadCount: 0,
         },
         { authMode: 'userPool' }
       );
+      const modelError = formatModelErrors(res?.errors);
+      if (modelError) {
+        throw new Error(modelError);
+      }
 
       setConversations((prev) =>
         prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c))
