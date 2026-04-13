@@ -9,7 +9,6 @@ import { useUserLocation, haversineDistanceMiles } from '@/hooks/useUserLocation
 import { useFavorites, type FavoriteBusinessSnapshot } from '@/hooks/useFavorites';
 type ToggleFavoriteBiz = Parameters<ReturnType<typeof useFavorites>['toggleFavorite']>[0];
 import { SearchFilters, type SearchFilterState } from '@/components/search/SearchFilters';
-import { Navigation } from '@/components/Navigation';
 
 /**
  * Discover / Search page.
@@ -107,9 +106,8 @@ const Search = () => {
     (filterState.sortBy !== 'relevance' ? 1 : 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <Container maxWidth="7xl" className="space-y-8">
+    <div className="bg-background">
+      <Container maxWidth="7xl" className="space-y-10">
         <PageHeader
           title="Discover Local Businesses"
           description="Find and support minority-owned businesses in your community"
@@ -125,7 +123,7 @@ const Search = () => {
           }
         />
 
-        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+        <div className="flex flex-col sm:flex-row gap-4 mt-2 glass-panel rounded-2xl p-4">
           <div className="flex-1 relative">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
@@ -143,7 +141,7 @@ const Search = () => {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="rounded-lg border border-border bg-card h-72 animate-pulse"
+                className="rounded-2xl border border-white/30 bg-glass h-72 animate-pulse"
               />
             ))}
           </div>

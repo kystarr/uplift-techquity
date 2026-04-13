@@ -67,7 +67,7 @@ export function BusinessAnalyticsTab() {
           <p className="text-destructive text-sm whitespace-pre-wrap">{error.message}</p>
         ) : (
           <p>
-            No business found for your account. If you used the seed script, sign in with that same
+            No business found for your account. If you used the seed script, Sign In/Sign Up with that same
             email and ensure <code className="text-xs bg-muted px-1 rounded">amplify_outputs.json</code>{" "}
             is from your latest sandbox deploy.
           </p>

@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BusinessProfileSection } from "@/components/profile/BusinessProfileSection";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { initialsFromDisplayName } from "@/lib/format-display-name";
 import { cn } from "@/lib/utils";
 
 export function ProfileTab() {
@@ -100,7 +101,7 @@ export function ProfileTab() {
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
               <AvatarImage src={profile.avatarUrl ?? undefined} alt="" />
-              <AvatarFallback>{profile.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{initialsFromDisplayName(profile.name)}</AvatarFallback>
             </Avatar>
             <div>
               <Label htmlFor="avatar" className="cursor-pointer">

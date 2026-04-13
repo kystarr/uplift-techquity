@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Navigation } from "@/components/Navigation";
 import { useMessages, MESSAGES_DRAFT_SEGMENT } from "@/hooks/useMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
@@ -241,8 +240,7 @@ const Messages = () => {
     Boolean(conversation);
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-background">
-      <Navigation />
+    <div className="flex min-h-[calc(100vh-4rem)] min-h-0 flex-col overflow-hidden bg-background">
       <DeleteConversationForMeDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

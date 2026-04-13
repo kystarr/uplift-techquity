@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BusinessProfileLayout } from "@/components/business-profile/BusinessProfileLayout";
 import { BusinessProfileSkeleton } from "@/components/business-profile/BusinessProfileSkeleton";
 import { ErrorState } from "@/components/shared";
-import { Navigation } from "@/components/Navigation";
 import { toast } from "sonner";
 
 /**
@@ -55,8 +54,7 @@ export default function BusinessProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
+      <div className="bg-background">
         <BusinessProfileSkeleton />
       </div>
     );
@@ -64,8 +62,7 @@ export default function BusinessProfilePage() {
 
   if (error || !business) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
+      <div className="bg-background">
         <ErrorState
           title={
             error?.message === "Business not found"
@@ -85,8 +82,7 @@ export default function BusinessProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <div className="bg-background">
       <BusinessProfileLayout
         business={business}
         reviewCount={reviews.length}

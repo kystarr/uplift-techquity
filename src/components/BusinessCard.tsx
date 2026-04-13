@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Heart } from "lucide-react";
+import { Star, MapPin, Heart, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BusinessCardProps {
@@ -49,7 +49,7 @@ export const BusinessCard = ({
 
   return (
     <Link to={`/business/${id}`} className="block">
-      <Card className="overflow-hidden hover:shadow-lg transition-smooth group cursor-pointer">
+      <Card className="overflow-hidden group cursor-pointer">
       <div className="relative h-48 overflow-hidden">
         <img 
           src={image} 
@@ -57,8 +57,8 @@ export const BusinessCard = ({
           className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
         />
         {verified && (
-          <Badge className="absolute top-3 left-3 bg-success text-success-foreground">
-            Verified
+          <Badge className="absolute top-3 left-3 bg-success text-success-foreground border-0 p-1.5" aria-label="Verified business">
+            <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
           </Badge>
         )}
         {familyFriendly && (
@@ -69,7 +69,7 @@ export const BusinessCard = ({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-3 right-3 bg-card/80 hover:bg-card"
+          className="absolute top-3 right-3 bg-card/85 hover:bg-card border border-border/70"
           onClick={handleHeartClick}
           aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
@@ -77,7 +77,7 @@ export const BusinessCard = ({
         </Button>
       </div>
       
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-5 space-y-3">
         <div>
           <h3 className="font-semibold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-smooth">
             {name}

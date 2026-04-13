@@ -118,7 +118,7 @@ export function BusinessProfileSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your business</CardTitle>
+        <CardTitle>Your Business Details</CardTitle>
         <CardDescription>
           Edit how your listing appears to customers. Metrics and review tools stay under{" "}
           <Link to="/profile/business" className="text-primary underline underline-offset-2">
