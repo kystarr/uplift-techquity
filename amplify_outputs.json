@@ -967,6 +967,37 @@
       },
       "enums": {},
       "nonModels": {
+        "AssistantChatReply": {
+          "name": "AssistantChatReply",
+          "fields": {
+            "reply": {
+              "name": "reply",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            }
+          }
+        },
+        "ChatAssistantTurn": {
+          "name": "ChatAssistantTurn",
+          "fields": {
+            "role": {
+              "name": "role",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            }
+          }
+        },
         "FlagTargetDetails": {
           "name": "FlagTargetDetails",
           "fields": {
@@ -1385,6 +1416,31 @@
         }
       },
       "mutations": {
+        "chatWithAssistant": {
+          "name": "chatWithAssistant",
+          "isArray": false,
+          "type": {
+            "nonModel": "AssistantChatReply"
+          },
+          "isRequired": false,
+          "arguments": {
+            "message": {
+              "name": "message",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "history": {
+              "name": "history",
+              "isArray": true,
+              "type": {
+                "input": "ChatAssistantTurn"
+              },
+              "isRequired": false,
+              "isArrayNullable": true
+            }
+          }
+        },
         "submitModerationFlag": {
           "name": "submitModerationFlag",
           "isArray": false,
