@@ -10,20 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { formatDisplayNameForReviews } from "@/lib/format-display-name";
 
 export interface ReviewFormProps {
   businessId: string;
   submitting?: boolean;
   onSubmit: (params: { businessId: string; rating: number; text: string; authorName: string }) => Promise<void>;
-}
-
-/** Format "Hannah Gollner" → "Hannah G." */
-function formatDisplayName(fullName: string | undefined): string {
-  if (!fullName) return '';
-  const parts = fullName.trim().split(/\s+/);
-  const first = parts[0] ?? '';
-  const lastInitial = parts.length > 1 ? ` ${parts[parts.length - 1][0].toUpperCase()}.` : '';
-  return `${first}${lastInitial}`;
 }
 
 /**
@@ -44,7 +36,7 @@ export function ReviewForm({ businessId, submitting = false, onSubmit }: ReviewF
   React.useEffect(() => {
     if (!user) return;
     fetchUserAttributes()
-      .then((attrs) => setFormattedName(formatDisplayName(attrs.name)))
+      .then((attrs) => setFormattedName(formatDisplayNameForReviews(attrs.name)))
       .catch(() => setFormattedName(''));
   }, [user]);
 

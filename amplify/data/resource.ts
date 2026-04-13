@@ -221,6 +221,49 @@ const schema = a.schema({
   ]),
 
   /**
+   * BE-9: Messaging system for customer-business communication.
+   * Tracks conversations between users and businesses.
+   */
+  Conversation: a.model({
+    participantId: a.string().required(), // Customer user ID
+    /** Denormalized customer display for business-side inbox/thread headers. */
+    participantName: a.string(),
+    participantAvatarUrl: a.string(),
+    businessId: a.string().required(),
+    businessName: a.string(),
+    businessImage: a.string(),
+    lastMessage: a.string(),
+    lastMessageTimestamp: a.datetime(),
+    /** Unread messages for the customer (`participantId`) when the business has sent. */
+    unreadCount: a.integer().default(0),
+    /** Unread messages for the business owner when the customer has sent. */
+    businessUnreadCount: a.integer().default(0),
+    /** Customer hides thread on their side only; business-facing views unaffected. */
+    participantHidden: a.boolean().default(false),
+    /** When true, alerts/toasts for new activity on this thread are suppressed for the participant. */
+    participantMuted: a.boolean().default(false),
+  }).authorization((allow) => [
+    allow.owner().to(['read', 'create', 'update']),
+    allow.authenticated().to(['read', 'update']),
+  ]),
+
+  /**
+   * BE-9: Individual messages within a conversation.
+   */
+  Message: a.model({
+    conversationId: a.string().required(),
+    senderId: a.string().required(),
+    senderName: a.string().required(),
+    text: a.string(),
+    attachmentUrl: a.string(),
+    attachmentType: a.string(), // 'image' | 'file'
+    attachmentName: a.string(),
+  }).authorization((allow) => [
+    allow.owner().to(['create', 'read']),
+    allow.authenticated().to(['read']),
+  ]),
+
+  /**
    * BE-8.2 + BE-8.5: Validated flag creation with duplicate prevention.
    */
   /** Validated flag creation (name avoids clashing with model `createFlag`). */
