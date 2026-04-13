@@ -1,14 +1,31 @@
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-const trustedPartners = [
-  "Chambers of Commerce",
-  "Economic Initiatives",
-  "Community Orgs",
-  "Local Coalitions",
-  "Student Networks",
-  "Regional Partners",
-];
+/** Illustrative placeholder names only — not real directory listings. */
+const SAMPLE_SMALL_BUSINESSES = [
+  "Harbor Street Coffee",
+  "Bloom Flower Studio",
+  "Little Light Bookshop",
+  "Crown Cuts Barbershop",
+  "Oak & Anchor Woodworks",
+  "El Mercadito Kitchen",
+  "Third Coast Bikes",
+  "Grandma Rose’s Pies",
+  "Blue Note Vinyl",
+  "Spiced Path Apothecary",
+  "Founders Table Diner",
+  "Jade Lantern Noodles",
+] as const;
+
+function shuffled<T>(items: readonly T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 type HeroProps = {
   /** Page scroll (px) for background parallax — from parent so one scroll listener drives the landing page */
@@ -18,6 +35,7 @@ type HeroProps = {
 export const Hero = ({ scrollParallaxY = 0 }: HeroProps) => {
   const navigate = useNavigate();
   const sy = scrollParallaxY;
+  const trustedPartners = useMemo(() => shuffled(SAMPLE_SMALL_BUSINESSES), []);
 
   return (
     <section className="relative min-h-[720px] flex flex-col justify-center overflow-hidden bg-gradient-hero pb-16 pt-8 sm:pb-20">
@@ -62,15 +80,15 @@ export const Hero = ({ scrollParallaxY = 0 }: HeroProps) => {
             <p className="mb-5 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-accentHeading sm:text-xs">
               Discovery · Trust · Impact
             </p>
-            <h1 className="text-4xl font-bold leading-[1.08] text-foreground sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-bold leading-[1.12] text-foreground sm:text-5xl sm:leading-[1.15] lg:text-6xl lg:leading-[1.18]">
               Empowering Communities Through
-              <span className="mt-2 block bg-gradient-to-r from-foreground via-accentHeading to-foreground bg-clip-text text-transparent dark:from-foreground dark:via-primary dark:to-foreground">
-                Minority-Owned Businesses
+              <span className="mt-2 block bg-gradient-to-r from-foreground via-accentHeading to-foreground bg-clip-text pb-1 leading-snug text-transparent dark:from-foreground dark:via-primary dark:to-foreground">
+                Supporting Small Businesses
               </span>
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-              Discover, support, and connect with trusted Black-owned and minority-owned businesses in your community. Building economic equity, one connection at a time.
+              Discover, support, and connect with trusted minority-owned businesses in your community. Building economic equity, one connection at a time.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4 pt-8 sm:flex-row">
@@ -90,21 +108,6 @@ export const Hero = ({ scrollParallaxY = 0 }: HeroProps) => {
               >
                 Register Your Business
               </Button>
-            </div>
-
-            <div className="mx-auto mt-14 grid max-w-2xl grid-cols-3 gap-6 border-t border-white/25 pt-10 dark:border-white/10 sm:gap-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold tabular-nums text-defaultHeading">1000+</div>
-                <div className="text-sm text-muted-foreground">Verified Businesses</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold tabular-nums text-defaultHeading">50K+</div>
-                <div className="text-sm text-muted-foreground">Community Members</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold tabular-nums text-defaultHeading">4.8★</div>
-                <div className="text-sm text-muted-foreground">Average Rating</div>
-              </div>
             </div>
           </div>
 
