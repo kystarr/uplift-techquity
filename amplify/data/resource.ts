@@ -1,6 +1,7 @@
 import { a, defineData, type ClientSchema } from '@aws-amplify/backend';
 import { postConfirmation } from '../functions/post-confirmation/resource';
 import { moderation } from '../functions/moderation/resource';
+import { chatAssistant } from '../functions/chat-assistant/resource';
 
 /**
  * BE-1.4: Auth Middleware via Authorization Rules
@@ -63,6 +64,29 @@ const schema = a.schema({
     pendingZip: a.string(),
     verificationDocumentKeys: a.string().array(),
     verificationStatus: a.string(),
+  }),
+
+  /** Prior turns for multi-turn chat (server rebuilds context each request). */
+  ChatAssistantTurn: a.customType({
+    role: a.string().required(),
+    content: a.string().required(),
+  }),
+
+  AssistantBusinessCard: a.customType({
+    id: a.id().required(),
+    name: a.string().required(),
+    category: a.string().required(),
+    rating: a.float().required(),
+    reviewCount: a.integer().required(),
+    verified: a.boolean().required(),
+    city: a.string(),
+    state: a.string(),
+    imageUrl: a.string(),
+  }),
+
+  AssistantChatReply: a.customType({
+    reply: a.string().required(),
+    referencedBusinesses: a.ref('AssistantBusinessCard').array(),
   }),
 
   AdminActivityEntry: a.customType({
@@ -256,6 +280,25 @@ const schema = a.schema({
    * BE-8.2 + BE-8.5: Validated flag creation with duplicate prevention.
    */
   /** Validated flag creation (name avoids clashing with model `createFlag`). */
+  /**
+   * Grounded assistant: loads approved businesses server-side and calls Gemini with a secret key.
+   */
+  chatWithAssistant: a
+    .mutation()
+    .arguments({
+      message: a.string().required(),
+      history: a.ref('ChatAssistantTurn').array(),
+      latitude: a.float(),
+      longitude: a.float(),
+    })
+    .returns(a.ref('AssistantChatReply'))
+    .authorization((allow) => [
+      allow.authenticated(),
+      allow.guest(),
+      allow.publicApiKey(),
+    ])
+    .handler(a.handler.function(chatAssistant)),
+
   submitModerationFlag: a
     .mutation()
     .arguments({
@@ -394,6 +437,7 @@ const schema = a.schema({
 }).authorization((allow) => [
   allow.resource(postConfirmation).to(['mutate']),
   allow.resource(moderation).to(['query', 'mutate']),
+  allow.resource(chatAssistant).to(['query', 'mutate']),
 ]);
 
 export type Schema = ClientSchema<typeof schema>;

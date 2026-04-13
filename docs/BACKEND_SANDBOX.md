@@ -43,6 +43,14 @@ The **`hgoll`** name comes from the Amplify sandbox CloudFormation stack pattern
    Default admin (unless overridden by env): `admin@uplift.local` / `Admin123!`  
    IAM must allow Cognito admin APIs on this user pool. The script signs in with the admin password to create the `User` row (owner-based auth).
 
+5. **Uplift chat assistant (Gemini):** the `chatWithAssistant` mutation runs in Lambda and needs a Google API key in **SSM** (Amplify secret), not in the Vite `.env`:
+
+   ```bash
+   npx ampx sandbox secret set GEMINI_API_KEY
+   ```
+
+   Paste the key when prompted. Redeploy or let the running sandbox pick it up as documented for secrets.
+
 ## Who updates `amplify_outputs.json`?
 
 After **auth or data schema** changes, the person who deploys the agreed sandbox should run sandbox once and **commit** the updated `amplify_outputs.json` so `dev` and Vercel stay in sync.
