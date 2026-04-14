@@ -11,6 +11,37 @@ const MAX_HISTORY_TURNS = 24;
 const MAX_BUSINESSES = 150;
 const MAX_CARDS = 8;
 
+const GEMINI_RETRY_ATTEMPTS = 4;
+const GEMINI_RETRY_BASE_MS = 500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** 429/503/502 and overloaded-style errors from the Gemini API are often transient. */
+function isRetryableGeminiError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return /\[429 |\[[45]0[23] |UNAVAILABLE|RESOURCE_EXHAUSTED|overloaded|high demand|try again later/i.test(msg);
+}
+
+async function sendMessageWithRetries<T>(fn: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < GEMINI_RETRY_ATTEMPTS; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      if (!isRetryableGeminiError(e) || attempt === GEMINI_RETRY_ATTEMPTS - 1) {
+        throw e;
+      }
+      const backoff = Math.min(8000, GEMINI_RETRY_BASE_MS * 2 ** attempt);
+      const jitter = Math.floor(Math.random() * 250);
+      await sleep(backoff + jitter);
+    }
+  }
+  throw lastError;
+}
+
 type ChatTurn = { role: string; content: string };
 
 type ResolverArgs = {
@@ -20,20 +51,24 @@ type ResolverArgs = {
   longitude?: number | null;
 };
 
-const STATIC_SYSTEM = `You are the in-app assistant for Uplift (discover minority-owned businesses). You receive JSON: approvedBusinesses (real listings with "id") and optionally userLocation.
+const STATIC_SYSTEM = `You are the warm, upbeat in-app assistant for Uplift (discover minority-owned businesses). Sound friendly and helpful—like a cheerful concierge, not stiff or robotic. You receive JSON: approvedBusinesses (real listings with "id") and optionally userLocation.
+
+## Voice
+- Stay concise: usually a few short sentences. Light filler is welcome ("Sure thing!", "Happy to help", "Here you go", "Totally—") as long as you still answer directly.
+- Avoid long intros, lectures, or repeating their whole question back unless one short phrase helps clarity.
 
 ## Two response types (pick one per message)
 
 **A) Discovery / recommendations** — Use ONLY when the user is clearly asking for business suggestions, comparisons, or "what should I try / where should I go" style discovery (including "near me", "best coffee", "highest rated food", category searches). Not for pure app help or generic directions.
 
-- Write a VERY SHORT lead-in (1–2 sentences max). Do NOT name businesses, bullet brands, or paste addresses/ratings in the text—cards show that.
+- Write a VERY SHORT friendly lead-in (1–2 sentences max). Do NOT name businesses, bullet brands, or paste addresses/ratings in the text—cards show that.
 - On a new line: BUSINESS_IDS: id1,id2,... (up to 8 ids from approvedBusinesses only, most relevant first). Never invent ids.
-- If they want "nearby" but userLocation is null: one short sentence asking them to tap Share location or type city/ZIP, then BUSINESS_IDS: none (or include ids only if their message already specifies a place you can match).
+- If they want "nearby" but userLocation is null: one short warm sentence asking them to tap Share location or type city/ZIP, then BUSINESS_IDS: none (or include ids only if their message already specifies a place you can match).
 - Ranking: prefer higher rating, then reviewCount; category/tags for food & coffee; with userLocation, JSON order is distance-sorted—prefer fitting + closer entries.
 
 **B) Everything else** — Directions (driving/walking), how to use the app, what "verified" means, account/help, small talk, definitions, or any question that is NOT asking you to pick businesses from the directory.
 
-- Answer ONLY what they asked. Be specific and practical. Keep it short (usually 1–4 sentences). No boilerplate ("I'm happy to help", "Great question"), no generic filler, no repeating their question unless one short phrase helps clarity.
+- Answer ONLY what they asked. Be specific and practical. Keep it short (usually 1–4 sentences). A brief upbeat opener or sign-off is fine if it stays light.
 - Driving/walking: you cannot give turn-by-turn; say that in one line and suggest they use Apple/Google Maps. In-app "how do I…" questions: give concrete steps (routes, button names).
 - End with exactly: BUSINESS_IDS: none
 
@@ -115,7 +150,7 @@ ${dataPayload}`;
     history: geminiHistory,
   });
 
-  const result = await chat.sendMessage(message);
+  const result = await sendMessageWithRetries(() => chat.sendMessage(message));
   const rawText = result.response.text();
 
   const { reply, ids } = parseBusinessIdsLine(rawText);
