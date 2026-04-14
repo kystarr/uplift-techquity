@@ -102,7 +102,7 @@ export interface UseMessagesResult {
   messagesLoading: boolean;
   error: Error | null;
   sendMessage: (conversationId: string, text: string, attachment?: { type: string; url: string; name: string }) => Promise<void>;
-  fetchMessages: (conversationId: string) => Promise<void>;
+  fetchMessages: (conversationId: string, options?: { quiet?: boolean }) => Promise<void>;
   createConversation: (businessId: string, businessName: string, businessImage?: string) => Promise<string>;
   markConversationAsRead: (conversationId: string) => Promise<void>;
   /** Hide conversation for the current user only (soft delete on participant side). */
@@ -201,14 +201,17 @@ export function useMessages(): UseMessagesResult {
     setMessagesLoading(false);
   }, []);
 
-  const fetchMessages = useCallback(async (conversationId: string) => {
-    setMessagesLoading(true);
-    setError(null);
+  const fetchMessages = useCallback(async (conversationId: string, options?: { quiet?: boolean }) => {
+    const quiet = options?.quiet === true;
+    if (!quiet) {
+      setMessagesLoading(true);
+      setError(null);
+    }
     try {
       const user = await getCurrentUser();
       if (!user || !conversationId || conversationId === MESSAGES_DRAFT_SEGMENT) {
         setMessages([]);
-        setMessagesLoading(false);
+        if (!quiet) setMessagesLoading(false);
         return;
       }
 
@@ -228,7 +231,7 @@ export function useMessages(): UseMessagesResult {
 
       if (!res || !res.data) {
         setMessages([]);
-        setMessagesLoading(false);
+        if (!quiet) setMessagesLoading(false);
         return;
       }
 
@@ -268,10 +271,14 @@ export function useMessages(): UseMessagesResult {
       }
     } catch (err) {
       console.error('Error fetching messages:', err);
-      setMessages([]);
-      setError(err instanceof Error ? err : new Error('Failed to fetch messages'));
+      if (!quiet) {
+        setMessages([]);
+        setError(err instanceof Error ? err : new Error('Failed to fetch messages'));
+      }
     } finally {
-      setMessagesLoading(false);
+      if (!quiet) {
+        setMessagesLoading(false);
+      }
     }
   }, []);
 
