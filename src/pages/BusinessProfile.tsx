@@ -1,9 +1,13 @@
 import { useParams } from "react-router-dom";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { amplifyDataClient } from "@/amplifyDataClient";
 import { useBusinessProfile } from "@/hooks/useBusinessProfile";
 import { useReviews } from "@/hooks/useReviews";
 import { useMessages, MESSAGES_DRAFT_SEGMENT } from "@/hooks/useMessages";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
+import { useFlag } from "@/hooks/useFlag";
 import { useAuth } from "@/contexts/AuthContext";
 import { BusinessProfileLayout } from "@/components/business-profile/BusinessProfileLayout";
 import { BusinessProfileSkeleton } from "@/components/business-profile/BusinessProfileSkeleton";
@@ -22,11 +26,42 @@ export default function BusinessProfilePage() {
   const { business, loading, error, refetch } = useBusinessProfile(id);
   const { reviews, submitting, submitReview } = useReviews(id);
   const { conversations } = useMessages();
+  const { favoriteIds, loading: favoritesLoading, toggleFavorite } = useFavorites();
+  const { backendRow: ownerBusinessRow } = useOwnerBusiness();
+  const { submitFlag, submitting: flagSubmitting } = useFlag();
 
   const existingConversationId = useMemo(() => {
     if (!business) return null;
     return conversations.find((c) => c.businessId === business.id)?.id ?? null;
   }, [business, conversations]);
+  const isOwnerViewingOwnBusiness = !!business && ownerBusinessRow?.id === business.id;
+
+  useEffect(() => {
+    if (!business?.id) return;
+
+    const sessionKey = `uplift:viewed-business:${business.id}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    const viewedAt = new Date().toISOString();
+    const viewerId = user?.userId;
+
+    const recordView = async () => {
+      for (const authMode of ["userPool", "iam", "apiKey"] as const) {
+        try {
+          await (amplifyDataClient.models as any).BusinessProfileView.create(
+            { businessId: business.id, viewerId, viewedAt },
+            { authMode }
+          );
+          sessionStorage.setItem(sessionKey, viewedAt);
+          return;
+        } catch {
+          // try next auth mode
+        }
+      }
+    };
+
+    void recordView();
+  }, [business?.id, user?.userId]);
 
   const handleMessageBusiness = () => {
     if (!business) return;
@@ -50,6 +85,49 @@ export default function BusinessProfilePage() {
 
     // No DB row until the user sends their first message.
     navigate(`/messages/${MESSAGES_DRAFT_SEGMENT}`, { state });
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!business) return;
+    if (!user) {
+      toast.info("Please sign in to save favorites.");
+      navigate("/auth");
+      return;
+    }
+
+    const wasFavorite = favoriteIds.has(business.id);
+    try {
+      await toggleFavorite({
+        id: business.id,
+        name: business.name,
+        category: business.categories[0] ?? "Business",
+        image: business.images[0] ?? "",
+        rating: business.averageRating,
+        verified: business.isVerified,
+      });
+      toast.success(wasFavorite ? "Removed from favorites" : "Added to favorites");
+    } catch (err) {
+      toast.error("Could not update favorites", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
+  };
+
+  const handleFlagReview = async (reviewId: string) => {
+    if (!isOwnerViewingOwnBusiness || !business || flagSubmitting) return;
+    try {
+      await submitFlag({
+        targetType: "REVIEW",
+        targetId: reviewId,
+        reason: "OTHER",
+        details: "Flagged by business owner from business profile reviews",
+        targetName: business.name,
+      });
+      toast.success("Review flagged and hidden pending admin");
+      await refetch();
+    } catch {
+      toast.error("Could not flag review");
+    }
   };
 
   if (loading) {
@@ -87,8 +165,13 @@ export default function BusinessProfilePage() {
         business={business}
         reviewCount={reviews.length}
         reviewsPreview={reviews.slice(0, 3)}
+        canModerateReviews={isOwnerViewingOwnBusiness}
+        onFlagReview={handleFlagReview}
         onSubmitReview={submitReview}
         submittingReview={submitting}
+        onToggleFavorite={handleToggleFavorite}
+        isFavorite={favoriteIds.has(business.id)}
+        favoriteInProgress={favoritesLoading}
         onMessageBusiness={handleMessageBusiness}
         backHref="/search"
       />

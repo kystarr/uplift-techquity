@@ -234,6 +234,19 @@ const schema = a.schema({
   ]),
 
   /**
+   * Lightweight analytics event for profile view tracking.
+   * One row is recorded per visit (client-side de-duped per session).
+   */
+  BusinessProfileView: a.model({
+    businessId: a.string().required(),
+    viewerId: a.string(),
+    viewedAt: a.datetime().required(),
+  }).authorization((allow) => [
+    allow.authenticated().to(['create', 'read']),
+    allow.guest().to(['create', 'read']),
+  ]),
+
+  /**
    * BE-9: Messaging system for customer-business communication.
    * Tracks conversations between users and businesses.
    */

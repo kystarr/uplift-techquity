@@ -29,17 +29,17 @@ const ContactRow = ({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded"
+      className="text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded break-all"
     >
       {value}
     </a>
   ) : (
-    <span>{value}</span>
+    <span className="whitespace-pre-line break-words">{value}</span>
   );
   return (
     <div className="flex items-start gap-3">
       <Icon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" aria-hidden />
-      <div>
+      <div className="min-w-0">
         <span className="sr-only">{label}: </span>
         {content}
       </div>

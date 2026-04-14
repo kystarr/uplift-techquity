@@ -1,0 +1,82 @@
+flowchart TB
+  subgraph client["Client"]
+    SPA["Vercel · SPA\nReact / Vite / TS"]
+    GEO["Browser Geolocation"]
+    NOM["Nominatim OSM\nZIP → lat/lng"]
+  end
+
+  subgraph auth["Identity"]
+    COG["Amazon Cognito\nUser Pool"]
+    L_PC["Lambda: postConfirmation"]
+  end
+
+  subgraph api["API"]
+    APS["AWS AppSync\nGraphQL · Amplify Data"]
+  end
+
+  subgraph lambdas["Lambdas"]
+    L_MOD["moderation"]
+    L_CHAT["chatAssistant"]
+  end
+
+  subgraph s3["Storage"]
+    BUCKET["Amazon S3\nAmplify Storage"]
+  end
+
+  subgraph ddb["DynamoDB — per model"]
+    DB_U[(User)]
+    DB_B[(Business)]
+    DB_R[(Review)]
+    DB_F[(Favorite)]
+    DB_FL[(Flag)]
+    DB_AN[(AdminNotification)]
+    DB_C[(Conversation)]
+    DB_M[(Message)]
+  end
+
+  subgraph ext["External"]
+    GEM["Google Gemini"]
+    SES["Amazon SES"]
+  end
+
+  SPA -->|JWT| COG
+  SPA -->|HTTPS GraphQL| APS
+  SPA --> GEO
+  SPA --> NOM
+  SPA -->|Storage| BUCKET
+
+  COG -->|trigger| L_PC
+  L_PC -->|create User via API| APS
+
+  APS <-->|CRUD| DB_U
+  APS <-->|CRUD| DB_B
+  APS <-->|CRUD| DB_R
+  APS <-->|CRUD| DB_F
+  APS <-->|CRUD| DB_FL
+  APS <-->|CRUD| DB_AN
+  APS <-->|CRUD| DB_C
+  APS <-->|CRUD| DB_M
+
+  APS <-->|resolvers| L_MOD
+  APS <-->|resolvers| L_CHAT
+  L_MOD -->|API client| APS
+  L_CHAT -->|API client| APS
+
+  L_MOD --> SES
+  L_CHAT --> GEM
+
+  classDef client fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a
+  classDef auth fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#9a3412
+  classDef api fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#5b21b6
+  classDef lambda fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d
+  classDef db fill:#ccfbf1,stroke:#0d9488,stroke-width:2px,color:#134e4a
+  classDef storage fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#713f12
+  classDef external fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#9d174d
+
+  class SPA,GEO,NOM client
+  class COG,L_PC auth
+  class APS api
+  class L_MOD,L_CHAT lambda
+  class DB_U,DB_B,DB_R,DB_F,DB_FL,DB_AN,DB_C,DB_M db
+  class BUCKET storage
+  class GEM,SES external
