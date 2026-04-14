@@ -2,98 +2,127 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 260 30% 15%;
-
+    --background: 216 38% 97%;
+    --foreground: 220 26% 12%;
+    --surface: 0 0% 100%;
     --card: 0 0% 100%;
-    --card-foreground: 260 30% 15%;
-
+    --card-foreground: 220 26% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 260 30% 15%;
+    --popover-foreground: 220 26% 12%;
 
-    --primary: 265 60% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 265 65% 45%;
+    --primary: 214 51% 79%;
+    --primary-foreground: 220 37% 15%;
+    --primary-hover: 214 49% 73%;
+    --primary-light: 214 52% 93%;
 
-    --secondary: 45 95% 55%;
-    --secondary-foreground: 260 30% 15%;
-    --secondary-hover: 45 95% 50%;
+    --secondary: 216 30% 93%;
+    --secondary-foreground: 220 26% 12%;
+    --secondary-hover: 216 30% 89%;
 
-    --success: 145 65% 45%;
-    --success-foreground: 0 0% 100%;
+    --success: 120 100% 80%;
+    --success-foreground: 220 37% 15%;
 
-    --muted: 260 10% 95%;
-    --muted-foreground: 260 10% 40%;
-
-    --accent: 265 60% 50%;
-    --accent-foreground: 0 0% 100%;
+    --muted: 216 28% 94%;
+    --muted-foreground: 217 15% 43%;
+    --default-heading: 220 26% 12%;
+    --accent-heading: 214 48% 30%;
+    --heading-accent: 214 48% 30%;
+    --accent: 214 38% 92%;
+    --accent-foreground: 220 26% 12%;
+    --accent-strong: 214 48% 30%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 260 15% 85%;
-    --input: 260 15% 85%;
-    --ring: 265 60% 50%;
+    --border: 214 23% 87%;
+    --input: 214 23% 87%;
+    --ring: 214 51% 79%;
 
-    --radius: 0.75rem;
+    --glass: 0 0% 100% / 0.68;
+    --glass-strong: 0 0% 100% / 0.82;
+    --glass-border: 0 0% 100% / 0.52;
+    --panel: 218 40% 98%;
+    --panel-foreground: 220 26% 12%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(265 60% 50%), hsl(280 65% 55%));
-    --gradient-secondary: linear-gradient(135deg, hsl(45 95% 55%), hsl(35 90% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(265 60% 50%) 0%, hsl(280 65% 55%) 50%, hsl(45 95% 55%) 100%);
-    --gradient-success: linear-gradient(135deg, hsl(145 65% 45%), hsl(155 70% 50%));
+    --radius: 1rem;
+    --radius-lg: 1.25rem;
+    --radius-xl: 1.5rem;
+    --blur-glass: 14px;
+    --blur-heavy: 22px;
 
-    --shadow-sm: 0 2px 8px hsl(265 60% 50% / 0.08);
-    --shadow-md: 0 4px 16px hsl(265 60% 50% / 0.12);
-    --shadow-lg: 0 8px 32px hsl(265 60% 50% / 0.16);
-    --shadow-xl: 0 16px 48px hsl(265 60% 50% / 0.2);
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(214 59% 84%));
+    --gradient-secondary: linear-gradient(180deg, hsl(216 44% 99%), hsl(216 40% 95%));
+    --gradient-hero: radial-gradient(circle at 15% 12%, hsl(var(--primary-light)) 0%, transparent 42%),
+      radial-gradient(circle at 88% 7%, hsl(214 52% 86% / 0.36) 0%, transparent 32%),
+      linear-gradient(180deg, hsl(216 38% 98%) 0%, hsl(217 39% 95%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(120 100% 74%));
 
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-sm: 0 8px 22px hsl(220 40% 20% / 0.06);
+    --shadow-md: 0 14px 34px hsl(220 40% 20% / 0.08);
+    --shadow-lg: 0 20px 48px hsl(220 40% 20% / 0.1);
+    --shadow-xl: 0 28px 64px hsl(220 40% 20% / 0.12);
+    --shadow-glass: 0 14px 34px hsl(220 40% 20% / 0.08);
+
+    --transition-smooth: all 260ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .dark {
-    --background: 260 30% 8%;
-    --foreground: 0 0% 95%;
+    --background: 223 44% 10%;
+    --foreground: 210 30% 96%;
+    --surface: 222 36% 13%;
+    --card: 222 37% 15%;
+    --card-foreground: 210 33% 98%;
+    --popover: 222 37% 15%;
+    --popover-foreground: 210 33% 98%;
 
-    --card: 260 25% 12%;
-    --card-foreground: 0 0% 95%;
+    --primary: 214 51% 79%;
+    --primary-foreground: 222 36% 16%;
+    --primary-hover: 214 55% 85%;
+    --primary-light: 214 51% 79% / 0.2;
 
-    --popover: 260 25% 12%;
-    --popover-foreground: 0 0% 95%;
+    --secondary: 222 28% 21%;
+    --secondary-foreground: 210 33% 98%;
+    --secondary-hover: 222 28% 26%;
 
-    --primary: 265 65% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 265 70% 60%;
+    --success: 120 100% 80%;
+    --success-foreground: 220 37% 15%;
 
-    --secondary: 45 95% 60%;
-    --secondary-foreground: 260 30% 15%;
-    --secondary-hover: 45 95% 65%;
+    --muted: 222 25% 19%;
+    --muted-foreground: 215 17% 70%;
 
-    --success: 145 65% 50%;
-    --success-foreground: 0 0% 100%;
-
-    --muted: 260 20% 18%;
-    --muted-foreground: 260 10% 65%;
-
-    --accent: 265 65% 55%;
-    --accent-foreground: 0 0% 100%;
+    --default-heading: 210 33% 98%;
+    --accent-heading: 214 74% 86%;
+    --heading-accent: 214 74% 86%;
+    --accent: 222 30% 23%;
+    --accent-foreground: 210 33% 98%;
+    --accent-strong: 214 74% 86%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 260 20% 20%;
-    --input: 260 20% 20%;
-    --ring: 265 65% 55%;
+    --border: 220 28% 26%;
+    --input: 220 28% 26%;
+    --ring: 214 51% 79%;
 
-    --shadow-sm: 0 2px 8px hsl(0 0% 0% / 0.3);
-    --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.4);
-    --shadow-lg: 0 8px 32px hsl(0 0% 0% / 0.5);
-    --shadow-xl: 0 16px 48px hsl(0 0% 0% / 0.6);
+    --glass: 222 35% 18% / 0.62;
+    --glass-strong: 222 36% 21% / 0.8;
+    --glass-border: 214 36% 70% / 0.18;
+    --panel: 222 34% 17%;
+    --panel-foreground: 210 33% 98%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(214 50% 70%), hsl(214 56% 82%));
+    --gradient-secondary: linear-gradient(180deg, hsl(223 34% 16%), hsl(223 30% 13%));
+    --gradient-hero: radial-gradient(circle at 15% 12%, hsl(214 50% 72% / 0.22) 0%, transparent 45%),
+      radial-gradient(circle at 88% 7%, hsl(214 58% 72% / 0.18) 0%, transparent 36%),
+      linear-gradient(180deg, hsl(223 40% 12%) 0%, hsl(223 42% 9%) 100%);
+
+    --shadow-sm: 0 10px 22px hsl(0 0% 0% / 0.32);
+    --shadow-md: 0 14px 32px hsl(0 0% 0% / 0.42);
+    --shadow-lg: 0 18px 42px hsl(0 0% 0% / 0.48);
+    --shadow-xl: 0 24px 52px hsl(0 0% 0% / 0.56);
+    --shadow-glass: 0 14px 32px hsl(0 0% 0% / 0.42);
   }
 }
 
@@ -103,6 +132,50 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image: var(--gradient-hero);
+    background-attachment: fixed;
+    transition: background-color 260ms ease, color 260ms ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: hsl(var(--default-heading));
+  }
+
+  html,
+  body,
+  [class*="bg-"],
+  [class*="text-"],
+  [class*="border-"] {
+    transition:
+      background-color 260ms ease,
+      border-color 260ms ease,
+      color 260ms ease,
+      box-shadow 260ms ease,
+      transform 260ms ease;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: hsl(var(--glass));
+    backdrop-filter: blur(var(--blur-glass));
+    -webkit-backdrop-filter: blur(var(--blur-glass));
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-panel-strong {
+    background: hsl(var(--glass-strong));
+    backdrop-filter: blur(var(--blur-heavy));
+    -webkit-backdrop-filter: blur(var(--blur-heavy));
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--shadow-lg);
+  }
+
+  .floating-surface {
+    background: hsl(var(--surface) / 0.92);
+    border: 1px solid hsl(var(--border) / 0.85);
+    box-shadow: var(--shadow-md);
   }
 }

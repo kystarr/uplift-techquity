@@ -1,23 +1,28 @@
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Heart } from "lucide-react";
+import { Star, MapPin, Heart, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 
 interface BusinessCardProps {
   id: string;
   name: string;
   category: string;
   rating: number;
-  reviewCount: number;
+  reviewCount?: number;
   distance: string;
   image: string;
   tags: string[];
   verified: boolean;
   familyFriendly?: boolean;
+  /** Controlled favorite state; if omitted the heart button redirects to /auth */
+  isFavorite?: boolean;
+  /** Called with businessId when the heart is toggled */
+  onToggleFavorite?: (id: string) => void;
 }
 
 export const BusinessCard = ({
+  id,
   name,
   category,
   rating,
@@ -27,11 +32,24 @@ export const BusinessCard = ({
   tags,
   verified,
   familyFriendly,
+  isFavorite,
+  onToggleFavorite,
 }: BusinessCardProps) => {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const navigate = useNavigate();
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(id);
+    } else {
+      navigate('/auth');
+    }
+  };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-smooth group cursor-pointer">
+    <Link to={`/business/${id}`} className="block">
+      <Card className="overflow-hidden group cursor-pointer">
       <div className="relative h-48 overflow-hidden">
         <img 
           src={image} 
@@ -39,29 +57,27 @@ export const BusinessCard = ({
           className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
         />
         {verified && (
-          <Badge className="absolute top-3 left-3 bg-success text-success-foreground">
-            Verified
+          <Badge className="absolute top-3 left-3 bg-success text-success-foreground border-0 p-1.5" aria-label="Verified business">
+            <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
           </Badge>
         )}
         {familyFriendly && (
-          <Badge className="absolute top-3 right-3 bg-secondary text-secondary-foreground">
+          <Badge className="absolute top-3 right-12 bg-secondary text-secondary-foreground">
             Family Friendly
           </Badge>
         )}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-3 right-3 bg-card/80 hover:bg-card"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsFavorite(!isFavorite);
-          }}
+          className="absolute top-3 right-3 bg-card/85 hover:bg-card border border-border/70"
+          onClick={handleHeartClick}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart className={`h-5 w-5 ${isFavorite ? 'fill-destructive text-destructive' : ''}`} />
         </Button>
       </div>
       
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-5 space-y-3">
         <div>
           <h3 className="font-semibold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-smooth">
             {name}
@@ -71,14 +87,18 @@ export const BusinessCard = ({
 
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-secondary text-secondary" />
+            <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
             <span className="font-medium text-foreground">{rating.toFixed(1)}</span>
-            <span className="text-muted-foreground">({reviewCount})</span>
+            {reviewCount !== undefined && (
+              <span className="text-muted-foreground">({reviewCount})</span>
+            )}
           </div>
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span>{distance}</span>
-          </div>
+          {distance && (
+            <div className="flex items-center gap-1 text-primary">
+              <MapPin className="h-4 w-4 text-primary" />
+              <span className="text-primary">{distance}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -90,5 +110,6 @@ export const BusinessCard = ({
         </div>
       </CardContent>
     </Card>
+    </Link>
   );
 };

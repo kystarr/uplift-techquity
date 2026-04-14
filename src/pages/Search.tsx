@@ -1,120 +1,225 @@
-import { Navigation } from "@/components/Navigation";
-import { BusinessCard } from "@/components/BusinessCard";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search as SearchIcon, SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
+import { BusinessCard } from '@/components/BusinessCard';
+import { Container, PageHeader } from '@/components/shared';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { useBusinessSearch } from '@/hooks/useBusinessSearch';
+import { useUserLocation, haversineDistanceMiles } from '@/hooks/useUserLocation';
+import { useFavorites, type FavoriteBusinessSnapshot } from '@/hooks/useFavorites';
+type ToggleFavoriteBiz = Parameters<ReturnType<typeof useFavorites>['toggleFavorite']>[0];
+import { SearchFilters, type SearchFilterState } from '@/components/search/SearchFilters';
 
-// Mock data
-const mockBusinesses = [
-  {
-    id: "1",
-    name: "Natural Essence Hair Studio",
-    category: "Beauty & Wellness",
-    rating: 4.9,
-    reviewCount: 234,
-    distance: "0.8 mi",
-    image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=300&fit=crop",
-    tags: ["Natural Hair", "Braiding", "Locs"],
-    verified: true,
-    familyFriendly: true,
-  },
-  {
-    id: "2",
-    name: "Soul Food Kitchen",
-    category: "Restaurant",
-    rating: 4.8,
-    reviewCount: 456,
-    distance: "1.2 mi",
-    image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop",
-    tags: ["Southern Cuisine", "Comfort Food", "Catering"],
-    verified: true,
-    familyFriendly: true,
-  },
-  {
-    id: "3",
-    name: "Mindful Wellness Center",
-    category: "Mental Health",
-    rating: 5.0,
-    reviewCount: 127,
-    distance: "2.1 mi",
-    image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&h=300&fit=crop",
-    tags: ["Therapy", "Counseling", "Wellness"],
-    verified: true,
-  },
-  {
-    id: "4",
-    name: "Heritage Books & Coffee",
-    category: "Retail & Cafe",
-    rating: 4.7,
-    reviewCount: 189,
-    distance: "0.5 mi",
-    image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop",
-    tags: ["Books", "Coffee", "Events"],
-    verified: true,
-    familyFriendly: true,
-  },
-  {
-    id: "5",
-    name: "Empowered Birth Doula Services",
-    category: "Healthcare",
-    rating: 5.0,
-    reviewCount: 92,
-    distance: "3.0 mi",
-    image: "https://images.unsplash.com/photo-1584515933487-779824d29309?w=400&h=300&fit=crop",
-    tags: ["Doula", "Birth Support", "Maternal Health"],
-    verified: true,
-  },
-  {
-    id: "6",
-    name: "Urban Tech Solutions",
-    category: "Technology Services",
-    rating: 4.9,
-    reviewCount: 203,
-    distance: "1.8 mi",
-    image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=300&fit=crop",
-    tags: ["IT Support", "Web Design", "Consulting"],
-    verified: true,
-  },
-];
-
+/**
+ * Discover / Search page.
+ *
+ * Data source: Amplify Gen 2 Business table (live, no mock data).
+ * Filter: only businesses where verificationStatus === "APPROVED" are shown.
+ *         This is enforced inside useBusinessSearch.
+ *
+ * The search input filters the already-loaded APPROVED list client-side
+ * by name, category, or tags — no re-fetch needed per keystroke.
+ * The filter sheet adds category, min-rating, and sort-by-distance controls.
+ */
 const Search = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterState, setFilterState] = useState<SearchFilterState>({
+    selectedCategories: [],
+    minRating: 0,
+    sortBy: 'relevance',
+  });
+
+  const { businesses, loading, error, refetch } = useBusinessSearch();
+  const { coords, locationError, hasLocation, requesting, requestLocation, geocodeZip } = useUserLocation();
+  const { favoriteIds, toggleFavorite } = useFavorites();
+
+  /** Ask for location once per browser session when opening Discover — not only inside Filters. */
+  useEffect(() => {
+    if (hasLocation) return;
+    if (typeof sessionStorage === "undefined") return;
+    if (sessionStorage.getItem("uplift_location_prompted") === "1") return;
+    sessionStorage.setItem("uplift_location_prompted", "1");
+    requestLocation();
+  }, [hasLocation, requestLocation]);
+
+  // All unique categories derived from loaded businesses
+  const availableCategories = useMemo(() => {
+    const seen = new Set<string>();
+    businesses.forEach((b) => { if (b.category) seen.add(b.category); });
+    return Array.from(seen).sort();
+  }, [businesses]);
+
+  const filtered = useMemo(() => {
+    let list = [...businesses];
+
+    // Text search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (b) =>
+          b.name.toLowerCase().includes(q) ||
+          b.category.toLowerCase().includes(q) ||
+          b.tags.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+
+    // Category filter
+    if (filterState.selectedCategories.length > 0) {
+      list = list.filter((b) => filterState.selectedCategories.includes(b.category));
+    }
+
+    // Minimum rating filter
+    if (filterState.minRating > 0) {
+      list = list.filter((b) => b.rating >= filterState.minRating);
+    }
+
+    // Sort
+    if (filterState.sortBy === 'rating') {
+      list.sort((a, b) => b.rating - a.rating);
+    } else if (filterState.sortBy === 'distance' && coords) {
+      list.sort((a, b) => {
+        const aDist =
+          a.latitude != null && a.longitude != null
+            ? haversineDistanceMiles(coords.latitude, coords.longitude, a.latitude, a.longitude)
+            : Infinity;
+        const bDist =
+          b.latitude != null && b.longitude != null
+            ? haversineDistanceMiles(coords.latitude, coords.longitude, b.latitude, b.longitude)
+            : Infinity;
+        return aDist - bDist;
+      });
+    }
+
+    return list;
+  }, [businesses, searchQuery, filterState, coords]);
+
+  const getDistanceLabel = (lat?: number, lon?: number): string => {
+    if (!hasLocation || lat == null || lon == null || !coords) return '';
+    const miles = haversineDistanceMiles(coords.latitude, coords.longitude, lat, lon);
+    return miles < 0.1 ? '< 0.1 mi' : `${miles.toFixed(1)} mi`;
+  };
+
+  const activeFilterCount =
+    (filterState.selectedCategories.length > 0 ? 1 : 0) +
+    (filterState.minRating > 0 ? 1 : 0) +
+    (filterState.sortBy !== 'relevance' ? 1 : 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Discover Local Businesses</h1>
-            <p className="text-muted-foreground">Find and support minority-owned businesses in your community</p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, service, or keyword..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12"
-              />
-            </div>
-            <Button variant="outline" size="lg">
+    <div className="bg-background">
+      <Container maxWidth="7xl" className="space-y-10">
+        <PageHeader
+          title="Discover Local Businesses"
+          description="Find and support minority-owned businesses in your community"
+          actions={
+            <Button
+              variant={activeFilterCount > 0 ? 'default' : 'outline'}
+              size="lg"
+              onClick={() => setFiltersOpen(true)}
+            >
               <SlidersHorizontal className="h-5 w-5" />
-              Filters
+              Filters{activeFilterCount > 0 && ` (${activeFilterCount})`}
             </Button>
-          </div>
+          }
+        />
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockBusinesses.map((business) => (
-              <BusinessCard key={business.id} {...business} />
-            ))}
+        <div className="flex flex-col sm:flex-row gap-4 mt-2 glass-panel rounded-2xl p-4">
+          <div className="flex-1 relative">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, service, or keyword..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-12"
+            />
           </div>
         </div>
-      </div>
+
+        {/* Loading state */}
+        {loading && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-white/30 bg-glass h-72 animate-pulse"
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Error state */}
+        {!loading && error && (
+          <div className="text-center py-12 space-y-3">
+            <p className="text-muted-foreground text-sm">
+              Couldn't load businesses. Please try again.
+            </p>
+            <Button variant="outline" size="sm" onClick={refetch}>
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && filtered.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-sm">
+              {searchQuery || activeFilterCount > 0
+                ? 'No businesses match your search or filters.'
+                : 'No businesses found.'}
+            </p>
+          </div>
+        )}
+
+        {/* Results grid */}
+        {!loading && !error && filtered.length > 0 && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            {filtered.map((business) => (
+              <BusinessCard
+                key={business.id}
+                id={business.id}
+                name={business.name}
+                category={business.category}
+                rating={business.rating}
+                reviewCount={business.reviewCount}
+                distance={getDistanceLabel(business.latitude, business.longitude)}
+                image={
+                  business.image ??
+                  'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=300&fit=crop'
+                }
+                tags={business.tags}
+                verified={business.verified}
+                isFavorite={favoriteIds.has(business.id)}
+                onToggleFavorite={() => {
+                  const arg: ToggleFavoriteBiz = {
+                    id: business.id,
+                    name: business.name,
+                    category: business.category,
+                    image: business.image ?? 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=300&fit=crop',
+                    rating: business.rating,
+                    verified: business.verified,
+                    latitude: business.latitude,
+                    longitude: business.longitude,
+                  };
+                  toggleFavorite(arg);
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </Container>
+
+      <SearchFilters
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        availableCategories={availableCategories}
+        filters={filterState}
+        onFiltersChange={setFilterState}
+        hasLocation={hasLocation}
+        requestingLocation={requesting}
+        locationError={locationError}
+        onRequestLocation={requestLocation}
+        onGeocodeZip={geocodeZip}
+      />
     </div>
   );
 };

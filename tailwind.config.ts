@@ -19,6 +19,7 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        surface: "hsl(var(--surface))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -53,6 +54,16 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        glass: "hsl(var(--glass))",
+        panel: {
+          DEFAULT: "hsl(var(--panel))",
+          foreground: "hsl(var(--panel-foreground))",
+        },
+        /* defaultHeading: neutral dark — default for all headings */
+        defaultHeading: "hsl(var(--default-heading))",
+        /* accentHeading: purple — emphasis headings, featured labels, highlight text only */
+        accentHeading: "hsl(var(--accent-heading))",
+        headingAccent: "hsl(var(--heading-accent))",
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
@@ -66,6 +77,7 @@ export default {
         'md': 'var(--shadow-md)',
         'lg': 'var(--shadow-lg)',
         'xl': 'var(--shadow-xl)',
+        'glass': 'var(--shadow-glass)',
       },
       transitionProperty: {
         'smooth': 'var(--transition-smooth)',
@@ -74,6 +86,8 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "var(--radius-lg)",
+        "2xl": "var(--radius-xl)",
       },
       keyframes: {
         "accordion-down": {
@@ -92,10 +106,30 @@ export default {
             height: "0",
           },
         },
+        "hero-float-a": {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "50%": { transform: "translate(3%, -4%) scale(1.05)" },
+        },
+        "hero-float-b": {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "50%": { transform: "translate(-4%, 3%) scale(1.08)" },
+        },
+        "hero-shimmer": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "100%": { backgroundPosition: "100% 50%" },
+        },
+        "trusted-marquee": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "hero-float-a": "hero-float-a 18s ease-in-out infinite",
+        "hero-float-b": "hero-float-b 22s ease-in-out infinite",
+        "hero-shimmer": "hero-shimmer 14s ease-in-out infinite alternate",
+        "trusted-marquee": "trusted-marquee 32s linear infinite",
       },
     },
   },
