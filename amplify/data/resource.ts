@@ -231,6 +231,7 @@ const schema = a.schema({
     businessLongitude: a.float(),
   }).authorization((allow) => [
     allow.owner(),
+    allow.authenticated().to(['read']),
   ]),
 
   /**

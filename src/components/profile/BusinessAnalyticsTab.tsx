@@ -69,7 +69,7 @@ export function BusinessAnalyticsTab() {
   const [profileViewsCount, setProfileViewsCount] = useState(0);
   const [reviewsCountInRange, setReviewsCountInRange] = useState(0);
   const [benchmark, setBenchmark] = useState<BenchmarkStats | null>(null);
-  const [timeRange, setTimeRange] = useState<TimeRange>("1M");
+  const [timeRange, setTimeRange] = useState<TimeRange>("ALL");
 
   const inRange = (iso: string | undefined, range: TimeRange) => {
     if (!iso) return false;
