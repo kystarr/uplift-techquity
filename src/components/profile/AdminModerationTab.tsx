@@ -7,7 +7,10 @@ import { useAdminFlags } from "@/hooks/useAdminFlags";
 import { useAdminModeration } from "@/hooks/useAdminModeration";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { amplifyDataClient } from "@/amplifyDataClient";
-import { withDataAuthModeFallback } from "@/lib/data-query-auth-fallback";
+import {
+  withDataAuthModeFallback,
+  withDataAuthModeMutation,
+} from "@/lib/data-query-auth-fallback";
 import { toast } from "sonner";
 import { Loader2, Bell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -422,12 +425,11 @@ function LabelledInput({
 
 async function fetchBusinessIdForReview(reviewId: string): Promise<string | null> {
   try {
-    const res = await amplifyDataClient.models.Review.get(
-      { id: reviewId },
-      { authMode: "userPool" }
+    const row = await withDataAuthModeMutation<{ businessId?: string | null }>(
+      "Review.get",
+      (authMode) => amplifyDataClient.models.Review.get({ id: reviewId }, { authMode })
     );
-    const data = res.data as { businessId?: string | null } | null;
-    return data?.businessId ?? null;
+    return row?.businessId ?? null;
   } catch {
     return null;
   }

@@ -169,16 +169,18 @@ export function useAdminModeration(): UseAdminModerationResult {
         amplifyDataClient.mutations.adminRemoveReview({ reviewId }, { authMode })
       );
 
-      await amplifyDataClient.models.AdminNotification.create(
-        {
-          type: 'REVIEW_REMOVED',
-          title: 'Review removed by admin',
-          message: `Review ${reviewId} was removed.`,
-          relatedId: reviewId,
-          relatedType: 'REVIEW',
-          read: false,
-        },
-        { authMode: 'userPool' }
+      await withDataAuthModeMutation('AdminNotification.create', (authMode) =>
+        amplifyDataClient.models.AdminNotification.create(
+          {
+            type: 'REVIEW_REMOVED',
+            title: 'Review removed by admin',
+            message: `Review ${reviewId} was removed.`,
+            relatedId: reviewId,
+            relatedType: 'REVIEW',
+            read: false,
+          },
+          { authMode }
+        )
       );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to remove review');
@@ -204,21 +206,23 @@ export function useAdminModeration(): UseAdminModerationResult {
         updatePayload.verified = false;
       }
 
-      await amplifyDataClient.models.Business.update(updatePayload as never, {
-        authMode: 'userPool',
-      });
+      await withDataAuthModeMutation('Business.update', (authMode) =>
+        amplifyDataClient.models.Business.update(updatePayload as never, { authMode })
+      );
 
       const notifType = status === 'REJECTED' ? 'BUSINESS_SUSPENDED' : 'FLAG_RESOLVED';
-      await amplifyDataClient.models.AdminNotification.create(
-        {
-          type: notifType,
-          title: `Business ${status.toLowerCase()}`,
-          message: `Business ${businessId} verification status changed to ${status}`,
-          relatedId: businessId,
-          relatedType: 'BUSINESS',
-          read: false,
-        },
-        { authMode: 'userPool' }
+      await withDataAuthModeMutation('AdminNotification.create', (authMode) =>
+        amplifyDataClient.models.AdminNotification.create(
+          {
+            type: notifType,
+            title: `Business ${status.toLowerCase()}`,
+            message: `Business ${businessId} verification status changed to ${status}`,
+            relatedId: businessId,
+            relatedType: 'BUSINESS',
+            read: false,
+          },
+          { authMode }
+        )
       );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to update business status');
