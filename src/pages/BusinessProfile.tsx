@@ -8,11 +8,31 @@ import { useMessages, MESSAGES_DRAFT_SEGMENT } from "@/hooks/useMessages";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { useFlag } from "@/hooks/useFlag";
+import { useAdminModeration } from "@/hooks/useAdminModeration";
 import { useAuth } from "@/contexts/AuthContext";
 import { BusinessProfileLayout } from "@/components/business-profile/BusinessProfileLayout";
 import { BusinessProfileSkeleton } from "@/components/business-profile/BusinessProfileSkeleton";
 import { ErrorState } from "@/components/shared";
 import { toast } from "sonner";
+
+function formatUnknownError(input: unknown): string {
+  if (input instanceof Error) {
+    const ownProps = Object.getOwnPropertyNames(input)
+      .filter((k) => !["name", "message", "stack"].includes(k))
+      .reduce<Record<string, unknown>>((acc, key) => {
+        acc[key] = (input as unknown as Record<string, unknown>)[key];
+        return acc;
+      }, {});
+    const extras = Object.keys(ownProps).length > 0 ? ` ${JSON.stringify(ownProps)}` : "";
+    return `${input.message || "Unknown error"}${extras}`;
+  }
+  if (typeof input === "string") return input;
+  try {
+    return JSON.stringify(input);
+  } catch {
+    return String(input);
+  }
+}
 
 /**
  * Public business profile page. Fetches business by ID from /api/business/:id,
@@ -22,13 +42,14 @@ import { toast } from "sonner";
 export default function BusinessProfilePage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { business, loading, error, refetch } = useBusinessProfile(id);
   const { reviews, submitting, submitReview } = useReviews(id);
   const { conversations } = useMessages();
   const { favoriteIds, loading: favoritesLoading, toggleFavorite } = useFavorites();
   const { backendRow: ownerBusinessRow } = useOwnerBusiness();
   const { submitFlag, submitting: flagSubmitting } = useFlag();
+  const { adminRemoveBusiness, loading: moderationLoading } = useAdminModeration();
 
   const existingConversationId = useMemo(() => {
     if (!business) return null;
@@ -130,6 +151,26 @@ export default function BusinessProfilePage() {
     }
   };
 
+  const handleAdminRemoveBusiness = async () => {
+    if (!business || !isAdmin || moderationLoading) return;
+    const confirmed = window.confirm(
+      `Remove "${business.name}" from the platform? This deletes the business and associated reviews.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await adminRemoveBusiness(business.id);
+      toast.success("Business removed");
+      navigate("/search");
+    } catch (err) {
+      // Temporary debugging aid while sandbox auth/error formatting is stabilized.
+      console.error("adminRemoveBusiness failed", err);
+      toast.error("Failed to remove business", {
+        description: formatUnknownError(err),
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-background">
@@ -173,6 +214,8 @@ export default function BusinessProfilePage() {
         isFavorite={favoriteIds.has(business.id)}
         favoriteInProgress={favoritesLoading}
         onMessageBusiness={handleMessageBusiness}
+        onRemoveBusiness={isAdmin ? handleAdminRemoveBusiness : undefined}
+        removeBusinessInProgress={moderationLoading}
         backHref="/search"
       />
     </div>

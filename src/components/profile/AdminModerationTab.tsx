@@ -45,7 +45,6 @@ export function AdminModerationTab() {
     resolveFlag,
     removeReview,
     adminResolveHiddenReview,
-    adminRemoveBusiness,
     adminRemoveUser,
     adminResolveBusinessVerification,
     loading: actionLoading,
@@ -60,7 +59,6 @@ export function AdminModerationTab() {
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
   const [removeUserId, setRemoveUserId] = useState("");
-  const [removeBusinessId, setRemoveBusinessId] = useState("");
 
   const loadQueues = async () => {
     setHiddenLoading(true);
@@ -387,31 +385,9 @@ export function AdminModerationTab() {
               Remove user
             </Button>
           </div>
-          <div className="space-y-2">
-            <LabelledInput
-              label="Remove business by id"
-              value={removeBusinessId}
-              onChange={setRemoveBusinessId}
-              placeholder="business uuid"
-            />
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={actionLoading || !removeBusinessId.trim()}
-              onClick={async () => {
-                try {
-                  await adminRemoveBusiness(removeBusinessId.trim());
-                  toast.success("Business removed");
-                  setRemoveBusinessId("");
-                  await loadQueues();
-                } catch {
-                  toast.error("Failed");
-                }
-              }}
-            >
-              Remove business
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Remove business is now available directly on each business profile page for safer, in-context moderation.
+          </p>
         </TabsContent>
       </Tabs>
     </div>

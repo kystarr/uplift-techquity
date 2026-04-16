@@ -2,6 +2,7 @@ import type { AppSyncResolverEvent } from 'aws-lambda';
 import { Amplify } from 'aws-amplify';
 import { generateClient } from 'aws-amplify/api';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { inspect } from 'node:util';
 import outputs from '../../../amplify_outputs.json';
 
 Amplify.configure(outputs, { ssr: true });
@@ -45,41 +46,95 @@ const VALID_TARGET_TYPES = new Set(['BUSINESS', 'REVIEW']);
 const VALID_RESOLVABLE_STATUSES = new Set(['PENDING', 'REVIEWED', 'DISMISSED', 'ACTION_TAKEN', 'RESOLVED']);
 
 export const handler = async (event: ResolverEvent) => {
-  const fieldName = event.info?.fieldName;
-
-  switch (fieldName) {
-    case 'submitModerationFlag':
-      return submitModerationFlag(event);
-    case 'listFlagsForAdmin':
-      return listFlagsForAdmin(event);
-    case 'resolveFlag':
-      return resolveFlag(event);
-    case 'flagCountsForAdmin':
-      return flagCountsForAdmin(event);
-    case 'hideReview':
-      return hideReview(event);
-    case 'adminResolveHiddenReview':
-      return adminResolveHiddenReview(event);
-    case 'listHiddenReviewsForAdmin':
-      return listHiddenReviewsForAdmin(event);
-    case 'listPendingBusinessVerifications':
-      return listPendingBusinessVerifications(event);
-    case 'requestBusinessProfileVerification':
-      return requestBusinessProfileVerification(event);
-    case 'adminResolveBusinessVerification':
-      return adminResolveBusinessVerification(event);
-    case 'adminRemoveReview':
-      return adminRemoveReview(event);
-    case 'adminRemoveBusiness':
-      return adminRemoveBusiness(event);
-    case 'adminRemoveUser':
-      return adminRemoveUser(event);
-    case 'listAdminActivityLog':
-      return listAdminActivityLog(event);
-    default:
-      throw new Error(`Unsupported moderation operation: ${String(fieldName)}`);
+  const fieldName =
+    event.info?.fieldName ??
+    (event as unknown as { fieldName?: string }).fieldName ??
+    (event as unknown as { info?: { parentTypeName?: string; fieldName?: string } }).info?.fieldName;
+  try {
+    switch (fieldName) {
+      case 'submitModerationFlag':
+        return submitModerationFlag(event);
+      case 'listFlagsForAdmin':
+        return listFlagsForAdmin(event);
+      case 'resolveFlag':
+        return resolveFlag(event);
+      case 'flagCountsForAdmin':
+        return flagCountsForAdmin(event);
+      case 'hideReview':
+        return hideReview(event);
+      case 'adminResolveHiddenReview':
+        return adminResolveHiddenReview(event);
+      case 'listHiddenReviewsForAdmin':
+        return listHiddenReviewsForAdmin(event);
+      case 'listPendingBusinessVerifications':
+        return listPendingBusinessVerifications(event);
+      case 'requestBusinessProfileVerification':
+        return requestBusinessProfileVerification(event);
+      case 'adminResolveBusinessVerification':
+        return adminResolveBusinessVerification(event);
+      case 'adminRemoveReview':
+        return adminRemoveReview(event);
+      case 'adminRemoveBusiness':
+        return adminRemoveBusiness(event);
+      case 'adminRemoveUser':
+        return adminRemoveUser(event);
+      case 'listAdminActivityLog':
+        return listAdminActivityLog(event);
+      default:
+        throw new Error(
+          `Unsupported moderation operation: ${String(fieldName)}. Received keys: ${Object.keys(
+            (event ?? {}) as Record<string, unknown>
+          ).join(', ')}`
+        );
+    }
+  } catch (err) {
+    const message = formatUnknownError(err);
+    console.error(`moderation handler error (field=${String(fieldName)}):`, message, err);
+    throw new Error(message);
   }
 };
+
+function formatUnknownError(input: unknown): string {
+  if (input instanceof Error) {
+    const message = input.message && input.message.trim() ? input.message : 'Unhandled moderation error';
+    const extras = Object.getOwnPropertyNames(input)
+      .filter((k) => !['name', 'message', 'stack'].includes(k))
+      .reduce<Record<string, unknown>>((acc, key) => {
+        acc[key] = (input as unknown as Record<string, unknown>)[key];
+        return acc;
+      }, {});
+    const extrasText = Object.keys(extras).length > 0 ? ` | extras=${safeJson(extras)}` : '';
+
+    if (message.includes('[object Object]')) {
+      const full = safeJson(input);
+      return `${message}${extrasText} | raw=${full}`;
+    }
+
+    return `${message}${extrasText}`;
+  }
+  if (typeof input === 'string' && input.trim()) return input;
+  if (input == null) return 'Unhandled moderation error';
+  return safeJson(input);
+}
+
+function safeJson(value: unknown): string {
+  const seen = new WeakSet<object>();
+  try {
+    return JSON.stringify(value, (_key, val) => {
+      if (val && typeof val === 'object') {
+        if (seen.has(val as object)) return '[Circular]';
+        seen.add(val as object);
+      }
+      return val;
+    });
+  } catch {
+    try {
+      return inspect(value, { depth: 6, breakLength: 120, maxArrayLength: 100 });
+    } catch {
+      return String(value);
+    }
+  }
+}
 
 async function submitModerationFlag(event: ResolverEvent) {
   const identity = requireAuthenticatedUser(event);
@@ -172,7 +227,7 @@ async function submitModerationFlag(event: ResolverEvent) {
 }
 
 async function listFlagsForAdmin(event: ResolverEvent) {
-  requireAdminUser(event);
+  await requireAdminUser(event);
 
   const requestedStatus = event.arguments?.status;
   const raw =
@@ -204,7 +259,7 @@ async function listFlagsForAdmin(event: ResolverEvent) {
 }
 
 async function resolveFlag(event: ResolverEvent) {
-  const identity = requireAdminUser(event);
+  const identity = await requireAdminUser(event);
   const flagId = String(event.arguments?.flagId ?? '').trim();
   const adminNotesRaw = event.arguments?.adminNotes;
   const adminNotes = typeof adminNotesRaw === 'string' && adminNotesRaw.trim().length > 0
@@ -275,7 +330,7 @@ async function resolveFlag(event: ResolverEvent) {
 }
 
 async function flagCountsForAdmin(event: ResolverEvent) {
-  requireAdminUser(event);
+  await requireAdminUser(event);
 
   const all = await listAllFlags();
   const pending = all.filter((flag) => flag.status === 'PENDING').length;
@@ -296,7 +351,7 @@ function requireAuthenticatedUser(event: ResolverEvent): Identity {
   return identity;
 }
 
-function requireAdminUser(event: ResolverEvent): Identity {
+async function requireAdminUser(event: ResolverEvent): Promise<Identity> {
   const identity = requireAuthenticatedUser(event);
   const claims = identity.claims ?? {};
 
@@ -310,11 +365,46 @@ function requireAdminUser(event: ResolverEvent): Identity {
         .filter(Boolean);
 
   const isAdmin = customRole === 'ADMIN' || groups.includes('ADMIN');
-  if (!isAdmin) {
+  if (isAdmin) {
+    return identity;
+  }
+
+  const userTableSaysAdmin = await isAdminViaUserTable(identity);
+  if (!userTableSaysAdmin) {
     throw new Error('Admin access required.');
   }
 
   return identity;
+}
+
+async function isAdminViaUserTable(identity: Identity): Promise<boolean> {
+  const claims = identity.claims ?? {};
+  const emailClaim = String(claims['email'] ?? '').trim().toLowerCase();
+  const username = String(identity.username ?? '').trim().toLowerCase();
+
+  if (!emailClaim && !username) return false;
+
+  const userRows = await graphql<{ listUsers: { items: Array<{ role?: string | null; email?: string | null }> } }>(
+    `
+      query ListUsersForAdminRoleFallback($filter: ModelUserFilterInput, $limit: Int) {
+        listUsers(filter: $filter, limit: $limit) {
+          items {
+            role
+            email
+          }
+        }
+      }
+    `,
+    {
+      filter: emailClaim
+        ? { email: { eq: emailClaim } }
+        : { email: { eq: username } },
+      limit: 1,
+    }
+  );
+
+  const match = (userRows.listUsers.items ?? [])[0];
+  return String(match?.role ?? '').toUpperCase() === 'ADMIN';
 }
 
 async function findExistingPendingFlag(reporterId: string, targetType: TargetType, targetId: string) {
@@ -697,6 +787,7 @@ type BizRow = {
   pendingState?: string | null;
   pendingZip?: string | null;
   verificationDocumentKeys?: string[] | null;
+  verificationDocumentKey?: string | null;
 };
 
 async function listAllBusinesses(): Promise<BizRow[]> {
@@ -709,7 +800,7 @@ async function listAllBusinesses(): Promise<BizRow[]> {
           listBusinesses(limit: $limit, nextToken: $nextToken) {
             items {
               id businessName contactEmail contactName ownerId street city state zip verificationStatus
-              pendingBusinessName pendingStreet pendingCity pendingState pendingZip verificationDocumentKeys
+              pendingBusinessName pendingStreet pendingCity pendingState pendingZip verificationDocumentKeys verificationDocumentKey
             }
             nextToken
           }
@@ -808,7 +899,7 @@ async function hideReview(event: ResolverEvent) {
 }
 
 async function adminResolveHiddenReview(event: ResolverEvent) {
-  const identity = requireAdminUser(event);
+  const identity = await requireAdminUser(event);
   const reviewId = String(event.arguments?.reviewId ?? '').trim();
   const decision = String(event.arguments?.decision ?? '').trim().toUpperCase();
   if (!reviewId) throw new Error('reviewId is required.');
@@ -850,7 +941,7 @@ async function adminResolveHiddenReview(event: ResolverEvent) {
 }
 
 async function listHiddenReviewsForAdmin(event: ResolverEvent) {
-  requireAdminUser(event);
+  await requireAdminUser(event);
   const all = await listAllReviews();
   const hidden = all.filter((r) => r.moderationStatus === 'hidden_pending_admin');
   const out = await Promise.all(
@@ -880,13 +971,14 @@ async function listHiddenReviewsForAdmin(event: ResolverEvent) {
 }
 
 async function listPendingBusinessVerifications(event: ResolverEvent) {
-  requireAdminUser(event);
+  await requireAdminUser(event);
   const businesses = await listAllBusinesses();
   return businesses
     .filter(
       (b) =>
         b.verificationStatus === 'UNDER_REVIEW' &&
         ((b.verificationDocumentKeys?.length ?? 0) > 0 ||
+          !!b.verificationDocumentKey ||
           !!(b.pendingBusinessName || b.pendingStreet || b.pendingCity))
     )
     .map((b) => ({
@@ -898,7 +990,7 @@ async function listPendingBusinessVerifications(event: ResolverEvent) {
       pendingCity: b.pendingCity ?? undefined,
       pendingState: b.pendingState ?? undefined,
       pendingZip: b.pendingZip ?? undefined,
-      verificationDocumentKeys: b.verificationDocumentKeys ?? [],
+      verificationDocumentKeys: b.verificationDocumentKeys ?? (b.verificationDocumentKey ? [b.verificationDocumentKey] : []),
       verificationStatus: b.verificationStatus,
     }));
 }
@@ -984,7 +1076,7 @@ async function requestBusinessProfileVerification(event: ResolverEvent) {
 }
 
 async function adminResolveBusinessVerification(event: ResolverEvent) {
-  const identity = requireAdminUser(event);
+  const identity = await requireAdminUser(event);
   const businessId = String(event.arguments?.businessId ?? '').trim();
   const decision = String(event.arguments?.decision ?? '').trim().toUpperCase();
   const adminNotesRaw = event.arguments?.adminNotes;
@@ -1104,7 +1196,7 @@ async function adminResolveBusinessVerification(event: ResolverEvent) {
 }
 
 async function adminRemoveReview(event: ResolverEvent) {
-  const identity = requireAdminUser(event);
+  const identity = await requireAdminUser(event);
   const reviewId = String(event.arguments?.reviewId ?? '').trim();
   if (!reviewId) throw new Error('reviewId is required.');
 
@@ -1138,7 +1230,7 @@ async function adminRemoveReview(event: ResolverEvent) {
 }
 
 async function adminRemoveBusiness(event: ResolverEvent) {
-  const identity = requireAdminUser(event);
+  const identity = await requireAdminUser(event);
   const businessId = String(event.arguments?.businessId ?? '').trim();
   if (!businessId) throw new Error('businessId is required.');
 
@@ -1158,25 +1250,31 @@ async function adminRemoveBusiness(event: ResolverEvent) {
   for (const r of reviews) {
     await graphql(
       `
-        mutation DR($input: DeleteReviewInput!) {
-          deleteReview(input: $input) {
+        mutation URBizRm($input: UpdateReviewInput!) {
+          updateReview(input: $input) {
             id
           }
         }
       `,
-      { input: { id: r.id } }
+      { input: { id: r.id, moderationStatus: 'removed' } }
     );
   }
 
   await graphql(
     `
-      mutation DB($input: DeleteBusinessInput!) {
-        deleteBusiness(input: $input) {
+      mutation UBBizRm($input: UpdateBusinessInput!) {
+        updateBusiness(input: $input) {
           id
         }
       }
     `,
-    { input: { id: businessId } }
+    {
+      input: {
+        id: businessId,
+        verificationStatus: 'REJECTED',
+        verified: false,
+      },
+    }
   );
 
   await appendActivityLog(identity, 'ADMIN_REMOVE_BUSINESS', 'BUSINESS', businessId, {});
@@ -1193,7 +1291,7 @@ async function adminRemoveBusiness(event: ResolverEvent) {
 }
 
 async function adminRemoveUser(event: ResolverEvent) {
-  const identity = requireAdminUser(event);
+  const identity = await requireAdminUser(event);
   const userId = String(event.arguments?.userId ?? '').trim();
   if (!userId) throw new Error('userId is required.');
 
@@ -1234,7 +1332,7 @@ async function adminRemoveUser(event: ResolverEvent) {
 }
 
 async function listAdminActivityLog(event: ResolverEvent) {
-  requireAdminUser(event);
+  await requireAdminUser(event);
   const result = await graphql<{
     listAdminNotifications: { items: Array<Record<string, unknown>> };
   }>(
@@ -1289,15 +1387,30 @@ async function listAdminActivityLog(event: ResolverEvent) {
 }
 
 async function graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
-  const response = await client.graphql({
-    query,
-    variables,
-    authMode: 'iam',
-  } as never);
+  let response: unknown;
+  try {
+    response = await client.graphql({
+      query,
+      variables,
+      authMode: 'iam',
+    } as never);
+  } catch (err) {
+    throw new Error(`GraphQL transport error: ${safeJson(err)}`);
+  }
 
-  const errors = (response as { errors?: Array<{ message?: string }> }).errors;
+  const errors = (response as { errors?: Array<{ message?: unknown }> }).errors;
   if (errors && errors.length > 0) {
-    throw new Error(errors.map((err) => err.message ?? 'Unknown GraphQL error').join('; '));
+    const formatUnknown = (value: unknown): string => {
+      if (typeof value === 'string' && value.trim()) return value;
+      if (value == null) return 'Unknown GraphQL error';
+      try {
+        const asJson = JSON.stringify(value);
+        return asJson && asJson !== '{}' ? asJson : 'Unknown GraphQL error';
+      } catch {
+        return String(value) || 'Unknown GraphQL error';
+      }
+    };
+    throw new Error(errors.map((err) => formatUnknown(err.message)).join('; '));
   }
 
   return (response as { data: T }).data;
