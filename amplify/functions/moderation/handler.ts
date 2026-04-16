@@ -973,14 +973,10 @@ async function listHiddenReviewsForAdmin(event: ResolverEvent) {
 async function listPendingBusinessVerifications(event: ResolverEvent) {
   await requireAdminUser(event);
   const businesses = await listAllBusinesses();
+  // Include every UNDER_REVIEW business. New owner registration sets UNDER_REVIEW
+  // with optional documents; the previous filter hid applications with no Step 2 files.
   return businesses
-    .filter(
-      (b) =>
-        b.verificationStatus === 'UNDER_REVIEW' &&
-        ((b.verificationDocumentKeys?.length ?? 0) > 0 ||
-          !!b.verificationDocumentKey ||
-          !!(b.pendingBusinessName || b.pendingStreet || b.pendingCity))
-    )
+    .filter((b) => b.verificationStatus === 'UNDER_REVIEW')
     .map((b) => ({
       businessId: b.id,
       businessName: b.businessName,
@@ -1172,7 +1168,8 @@ async function adminResolveBusinessVerification(event: ResolverEvent) {
       {
         input: {
           id: businessId,
-          verificationStatus: 'APPROVED',
+          verificationStatus: 'REJECTED',
+          verified: false,
           pendingBusinessName: null,
           pendingStreet: null,
           pendingCity: null,
@@ -1184,7 +1181,7 @@ async function adminResolveBusinessVerification(event: ResolverEvent) {
     );
     await sendModerationEmail(
       'Your business verification was rejected',
-      `Your requested name or address changes for ${biz.getBusiness.businessName} were not approved.${adminNotes ? ` Notes: ${adminNotes}` : ''}`,
+      `Your verification request for ${biz.getBusiness.businessName} was not approved.${adminNotes ? ` Notes: ${adminNotes}` : ''}`,
       [emailTo]
     );
   }
