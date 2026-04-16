@@ -26,26 +26,21 @@ export async function createBusinessFromRegistration(input: {
   let verificationDocumentKeys: string[] = [];
 
   if (documents.length > 0) {
-    const session = await fetchAuthSession();
-    const identityId = session.identityId;
-
-    if (!identityId) {
-      throw new Error('Could not resolve identity ID for document upload.');
-    }
+    await fetchAuthSession({ forceRefresh: true });
 
     const uploadedResults = await Promise.all(
       documents.map(async (file) => {
         const timestamp = Date.now();
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const key = `verification-documents/${identityId}/${timestamp}-${safeName}`;
 
-        await uploadData({
-          path: key,
+        const { path } = await uploadData({
+          path: ({ identityId }) =>
+            `verification-documents/${identityId}/${timestamp}-${safeName}`,
           data: file,
-          options: { contentType: file.type || 'application/octet-stream' }
+          options: { contentType: file.type || 'application/octet-stream' },
         }).result;
 
-        return key;
+        return path;
       })
     );
     verificationDocumentKeys = uploadedResults;

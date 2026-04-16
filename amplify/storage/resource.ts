@@ -10,13 +10,17 @@ import { defineStorage } from '@aws-amplify/backend';
  * The resulting S3 key is stored on the Business record as verificationDocumentKey.
  *
  * Owners can read/write/delete only files under their own identity-scoped prefix.
- * Guest users have no storage access — document access is owner-only.
+ *
+ * Guest (unauthenticated) business registration uploads verification PDFs using the
+ * same identity-scoped keys. The unauthenticated IAM role needs explicit `guest` write
+ * here; `entity('identity')` alone can yield PutObject 403 for guests.
  */
 export const storage = defineStorage({
   name: 'businessVerificationDocs',
   access: (allow) => ({
     'verification-documents/{entity_id}/*': [
       allow.entity('identity').to(['read', 'write', 'delete']),
+      allow.guest.to(['write']),
     ],
     'business-media/{entity_id}/*': [
       allow.entity('identity').to(['read', 'write', 'delete']),
