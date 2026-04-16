@@ -20,6 +20,7 @@ export async function createBusinessFromRegistration(input: {
 
   // 1. Upload verification documents to S3
   let verificationDocumentKey: string | undefined;
+  let verificationDocumentKeys: string[] = [];
 
   if (documents.length > 0) {
     const session = await fetchAuthSession();
@@ -44,6 +45,7 @@ export async function createBusinessFromRegistration(input: {
         return key;
       })
     );
+    verificationDocumentKeys = uploadedResults;
     verificationDocumentKey = uploadedResults[0];
   }
 
@@ -71,9 +73,10 @@ export async function createBusinessFromRegistration(input: {
 
     averageRating: 0,
     verified: false,
-    verificationStatus: 'APPROVED',
+    verificationStatus: 'UNDER_REVIEW',
     verificationSubmittedAt: new Date().toISOString(),
     verificationDocumentKey: verificationDocumentKey || undefined,
+    verificationDocumentKeys,
   };
 
   const { data, errors } = await (amplifyDataClient.models.Business.create as any)(createInput);

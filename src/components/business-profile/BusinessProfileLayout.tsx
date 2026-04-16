@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared";
-import { ChevronLeft, Heart, MessageCircle } from "lucide-react";
+import { ChevronLeft, Heart, MessageCircle, Trash2 } from "lucide-react";
 import { BusinessHeader } from "./BusinessHeader";
 import { BusinessContactCard } from "./BusinessContactCard";
 import { BusinessGallery } from "./BusinessGallery";
@@ -37,6 +37,9 @@ export interface BusinessProfileLayoutProps extends React.HTMLAttributes<HTMLDiv
   onToggleFavorite?: () => void;
   isFavorite?: boolean;
   favoriteInProgress?: boolean;
+  /** Admin-only destructive action for removing this business. */
+  onRemoveBusiness?: () => void;
+  removeBusinessInProgress?: boolean;
   /** Back link href (e.g. /search). If not set, breadcrumb still shows Search > Business name */
   backHref?: string;
 }
@@ -59,6 +62,8 @@ const BusinessProfileLayoutComponent = ({
   onToggleFavorite,
   isFavorite = false,
   favoriteInProgress = false,
+  onRemoveBusiness,
+  removeBusinessInProgress = false,
   backHref = "/search",
   className,
   ...props
@@ -181,6 +186,18 @@ const BusinessProfileLayoutComponent = ({
             >
               <MessageCircle className="h-4 w-4" />
               Message business
+            </Button>
+          )}
+          {onRemoveBusiness && (
+            <Button
+              type="button"
+              variant="destructive"
+              className="mb-4 w-full"
+              onClick={onRemoveBusiness}
+              disabled={removeBusinessInProgress}
+            >
+              <Trash2 className="h-4 w-4" />
+              Remove business
             </Button>
           )}
           <BusinessContactCard email={email} phone={phone} website={website} street={street} city={city} state={state} zip={zip} />
