@@ -70,9 +70,26 @@ export function AdminModerationTab() {
         amplifyDataClient.queries.listPendingBusinessVerifications({}, { authMode: "userPool" }),
         amplifyDataClient.queries.listAdminActivityLog({}, { authMode: "userPool" }),
       ]);
-      setHidden((Array.isArray(h.data) ? h.data : []) as HiddenQueueRow[]);
-      setPendingBiz((Array.isArray(p.data) ? p.data : []) as PendingBizRow[]);
-      setActivity((Array.isArray(a.data) ? a.data : []) as ActivityRow[]);
+      const extractQueryArray = <T,>(label: string, res: { data?: unknown; errors?: unknown[] }): T[] => {
+        const errs = res.errors;
+        if (errs && errs.length > 0) {
+          const msg = errs
+            .map((e) => (typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : String(e)))
+            .filter(Boolean)
+            .join("; ");
+          toast.error(`${label}: ${msg || "Request failed"}`);
+        }
+        const raw = res.data;
+        if (Array.isArray(raw)) return raw as T[];
+        if (raw && typeof raw === "object" && Array.isArray((raw as { items?: unknown[] }).items)) {
+          return (raw as { items: T[] }).items;
+        }
+        return [];
+      };
+
+      setHidden(extractQueryArray<HiddenQueueRow>("Hidden reviews", h));
+      setPendingBiz(extractQueryArray<PendingBizRow>("Pending verification", p));
+      setActivity(extractQueryArray<ActivityRow>("Activity log", a));
     } catch {
       toast.error("Failed to load admin queues");
     } finally {
@@ -147,7 +164,7 @@ export function AdminModerationTab() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="flags" className="w-full">
+      <Tabs defaultValue="verify" className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="flags">Flag queue ({counts.ALL})</TabsTrigger>
           <TabsTrigger value="hidden">Hidden reviews</TabsTrigger>

@@ -793,23 +793,29 @@ type BizRow = {
 async function listAllBusinesses(): Promise<BizRow[]> {
   const items: BizRow[] = [];
   let nextToken: string | null | undefined;
+  const BusinessModel = (client as { models?: { Business?: { list: (opts: unknown) => Promise<unknown> } } })
+    .models?.Business;
+  if (!BusinessModel?.list) {
+    throw new Error('Amplify client is missing models.Business.list');
+  }
+  let pages = 0;
   do {
-    const result = await graphql<{ listBusinesses: { items: BizRow[]; nextToken?: string | null } }>(
-      `
-        query LB($limit: Int, $nextToken: String) {
-          listBusinesses(limit: $limit, nextToken: $nextToken) {
-            items {
-              id businessName contactEmail contactName ownerId street city state zip verificationStatus
-              pendingBusinessName pendingStreet pendingCity pendingState pendingZip verificationDocumentKeys verificationDocumentKey
-            }
-            nextToken
-          }
-        }
-      `,
-      { limit: 200, nextToken }
-    );
-    items.push(...(result.listBusinesses.items ?? []));
-    nextToken = result.listBusinesses.nextToken;
+    pages += 1;
+    if (pages > 50) throw new Error('listAllBusinesses: exceeded max pages (possible nextToken loop)');
+    const res = (await BusinessModel.list({
+      limit: 200,
+      nextToken: nextToken ?? undefined,
+      authMode: 'iam',
+    })) as {
+      data?: BizRow[];
+      errors?: Array<{ message?: string }>;
+      nextToken?: string | null;
+    };
+    if (res.errors?.length) {
+      throw new Error(res.errors.map((e) => e.message ?? 'error').join('; '));
+    }
+    items.push(...(res.data ?? []));
+    nextToken = res.nextToken ?? undefined;
   } while (nextToken);
   return items;
 }
@@ -976,7 +982,7 @@ async function listPendingBusinessVerifications(event: ResolverEvent) {
   // Include every UNDER_REVIEW business. New owner registration sets UNDER_REVIEW
   // with optional documents; the previous filter hid applications with no Step 2 files.
   return businesses
-    .filter((b) => b.verificationStatus === 'UNDER_REVIEW')
+    .filter((b) => String(b.verificationStatus ?? '').trim().toUpperCase() === 'UNDER_REVIEW')
     .map((b) => ({
       businessId: b.id,
       businessName: b.businessName,
