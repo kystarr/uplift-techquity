@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { amplifyDataClient } from '@/amplifyDataClient';
+import {
+  withDataAuthModeFallback,
+  withDataAuthModeMutation,
+} from '@/lib/data-query-auth-fallback';
 
 export interface AdminNotificationItem {
   id: string;
@@ -35,11 +39,13 @@ export function useAdminNotifications(): UseAdminNotificationsResult {
     setLoading(true);
     setError(null);
     try {
-      const res = await (amplifyDataClient.models as any).AdminNotification.list({
-        authMode: 'userPool',
-      });
+      const { data: rows } = await withDataAuthModeFallback<Record<string, unknown>>(
+        'AdminNotification.list',
+        (authMode) =>
+          (amplifyDataClient.models as any).AdminNotification.list({ authMode })
+      );
 
-      const items: AdminNotificationItem[] = (res.data ?? [])
+      const items: AdminNotificationItem[] = (rows ?? [])
         .map((n: any): AdminNotificationItem => ({
           id: n.id,
           type: n.type,
@@ -68,9 +74,11 @@ export function useAdminNotifications(): UseAdminNotificationsResult {
 
   const markAsRead = useCallback(async (id: string) => {
     try {
-      await (amplifyDataClient.models as any).AdminNotification.update(
-        { id, read: true },
-        { authMode: 'userPool' }
+      await withDataAuthModeMutation('AdminNotification.update', (authMode) =>
+        (amplifyDataClient.models as any).AdminNotification.update(
+          { id, read: true },
+          { authMode }
+        )
       );
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
@@ -84,9 +92,11 @@ export function useAdminNotifications(): UseAdminNotificationsResult {
     const unread = notifications.filter((n) => !n.read);
     await Promise.allSettled(
       unread.map((n) =>
-        (amplifyDataClient.models as any).AdminNotification.update(
-          { id: n.id, read: true },
-          { authMode: 'userPool' }
+        withDataAuthModeMutation('AdminNotification.update', (authMode) =>
+          (amplifyDataClient.models as any).AdminNotification.update(
+            { id: n.id, read: true },
+            { authMode }
+          )
         )
       )
     );

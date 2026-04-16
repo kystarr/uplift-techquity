@@ -837,6 +837,15 @@
                       "read",
                       "update"
                     ]
+                  },
+                  {
+                    "allow": "private",
+                    "provider": "iam",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update"
+                    ]
                   }
                 ]
               }

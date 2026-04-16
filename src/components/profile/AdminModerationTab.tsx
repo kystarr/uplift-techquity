@@ -7,6 +7,7 @@ import { useAdminFlags } from "@/hooks/useAdminFlags";
 import { useAdminModeration } from "@/hooks/useAdminModeration";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { amplifyDataClient } from "@/amplifyDataClient";
+import { withDataAuthModeFallback } from "@/lib/data-query-auth-fallback";
 import { toast } from "sonner";
 import { Loader2, Bell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -66,32 +67,21 @@ export function AdminModerationTab() {
     setActivityLoading(true);
     try {
       const [h, p, a] = await Promise.all([
-        amplifyDataClient.queries.listHiddenReviewsForAdmin({}, { authMode: "userPool" }),
-        amplifyDataClient.queries.listPendingBusinessVerifications({}, { authMode: "userPool" }),
-        amplifyDataClient.queries.listAdminActivityLog({}, { authMode: "userPool" }),
+        withDataAuthModeFallback<HiddenQueueRow>("Hidden reviews", (authMode) =>
+          amplifyDataClient.queries.listHiddenReviewsForAdmin({}, { authMode })
+        ),
+        withDataAuthModeFallback<PendingBizRow>("Pending verification", (authMode) =>
+          amplifyDataClient.queries.listPendingBusinessVerifications({}, { authMode })
+        ),
+        withDataAuthModeFallback<ActivityRow>("Activity log", (authMode) =>
+          amplifyDataClient.queries.listAdminActivityLog({}, { authMode })
+        ),
       ]);
-      const extractQueryArray = <T,>(label: string, res: { data?: unknown; errors?: unknown[] }): T[] => {
-        const errs = res.errors;
-        if (errs && errs.length > 0) {
-          const msg = errs
-            .map((e) => (typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : String(e)))
-            .filter(Boolean)
-            .join("; ");
-          toast.error(`${label}: ${msg || "Request failed"}`);
-        }
-        const raw = res.data;
-        if (Array.isArray(raw)) return raw as T[];
-        if (raw && typeof raw === "object" && Array.isArray((raw as { items?: unknown[] }).items)) {
-          return (raw as { items: T[] }).items;
-        }
-        return [];
-      };
-
-      setHidden(extractQueryArray<HiddenQueueRow>("Hidden reviews", h));
-      setPendingBiz(extractQueryArray<PendingBizRow>("Pending verification", p));
-      setActivity(extractQueryArray<ActivityRow>("Activity log", a));
-    } catch {
-      toast.error("Failed to load admin queues");
+      setHidden(h.data);
+      setPendingBiz(p.data);
+      setActivity(a.data);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load admin queues");
     } finally {
       setHiddenLoading(false);
       setPendingLoading(false);
