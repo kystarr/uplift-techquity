@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { amplifyDataClient } from '@/amplifyDataClient';
+import { withDataAuthModeMutation } from '@/lib/data-query-auth-fallback';
 import { getCurrentUser } from 'aws-amplify/auth';
 
 export interface UseAdminModerationResult {
@@ -145,9 +146,11 @@ export function useAdminModeration(): UseAdminModerationResult {
     setLoading(true);
     setError(null);
     try {
-      await amplifyDataClient.mutations.resolveFlag(
-        { flagId, adminNotes: adminNotes ?? undefined },
-        { authMode: 'userPool' }
+      await withDataAuthModeMutation('resolveFlag', (authMode) =>
+        amplifyDataClient.mutations.resolveFlag(
+          { flagId, adminNotes: adminNotes ?? undefined },
+          { authMode }
+        )
       );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to resolve flag');
@@ -162,9 +165,8 @@ export function useAdminModeration(): UseAdminModerationResult {
     setLoading(true);
     setError(null);
     try {
-      await amplifyDataClient.mutations.adminRemoveReview(
-        { reviewId },
-        { authMode: 'userPool' }
+      await withDataAuthModeMutation('adminRemoveReview', (authMode) =>
+        amplifyDataClient.mutations.adminRemoveReview({ reviewId }, { authMode })
       );
 
       await amplifyDataClient.models.AdminNotification.create(
@@ -232,9 +234,8 @@ export function useAdminModeration(): UseAdminModerationResult {
       setLoading(true);
       setError(null);
       try {
-        await amplifyDataClient.mutations.adminResolveHiddenReview(
-          { reviewId, decision },
-          { authMode: 'userPool' }
+        await withDataAuthModeMutation('adminResolveHiddenReview', (authMode) =>
+          amplifyDataClient.mutations.adminResolveHiddenReview({ reviewId, decision }, { authMode })
         );
       } catch (e) {
         const err = e instanceof Error ? e : new Error('Failed to resolve hidden review');
@@ -251,22 +252,20 @@ export function useAdminModeration(): UseAdminModerationResult {
     setLoading(true);
     setError(null);
     try {
-      const res = await amplifyDataClient.mutations.adminRemoveBusiness(
-        { businessId },
-        { authMode: 'userPool' }
-      );
-      const errors = (res as { errors?: Array<{ message?: string }> }).errors;
-      if (errors && errors.length > 0) {
-        const serialized = safeSerialize(errors);
-        // Fallback: when moderation Lambda is blocked by IAM auth, perform an
-        // admin de-list directly with userPool permissions.
+      let data: boolean | null | undefined;
+      try {
+        data = (await withDataAuthModeMutation<boolean>('adminRemoveBusiness', (authMode) =>
+          amplifyDataClient.mutations.adminRemoveBusiness({ businessId }, { authMode })
+        )) as boolean | null | undefined;
+      } catch (inner) {
+        const serialized = safeSerialize(inner);
         if (serialized.includes('Unauthorized') || serialized.includes('GraphQL transport error')) {
           await fallbackDelistBusiness(businessId);
           return;
         }
-        throw new Error(`Failed to remove business: ${serialized}`);
+        throw inner;
       }
-      if (!(res as { data?: boolean }).data) {
+      if (!data) {
         throw new Error('Failed to remove business');
       }
     } catch (e) {
@@ -314,7 +313,9 @@ export function useAdminModeration(): UseAdminModerationResult {
     setLoading(true);
     setError(null);
     try {
-      await amplifyDataClient.mutations.adminRemoveUser({ userId }, { authMode: 'userPool' });
+      await withDataAuthModeMutation('adminRemoveUser', (authMode) =>
+        amplifyDataClient.mutations.adminRemoveUser({ userId }, { authMode })
+      );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to remove user');
       setError(err);
@@ -329,9 +330,11 @@ export function useAdminModeration(): UseAdminModerationResult {
       setLoading(true);
       setError(null);
       try {
-        await amplifyDataClient.mutations.adminResolveBusinessVerification(
-          { businessId, decision, adminNotes: adminNotes ?? undefined },
-          { authMode: 'userPool' }
+        await withDataAuthModeMutation('adminResolveBusinessVerification', (authMode) =>
+          amplifyDataClient.mutations.adminResolveBusinessVerification(
+            { businessId, decision, adminNotes: adminNotes ?? undefined },
+            { authMode }
+          )
         );
       } catch (e) {
         const err = e instanceof Error ? e : new Error('Failed to resolve verification');
