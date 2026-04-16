@@ -2132,6 +2132,11 @@
               "delete"
             ]
           },
+          "verification-documents/*": {
+            "guest": [
+              "write"
+            ]
+          },
           "business-media/${cognito-identity.amazonaws.com:sub}/*": {
             "entityidentity": [
               "get",
