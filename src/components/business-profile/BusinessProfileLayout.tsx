@@ -16,6 +16,7 @@ import { BusinessContactCard } from "./BusinessContactCard";
 import { BusinessGallery } from "./BusinessGallery";
 import { ReviewsPreview } from "./ReviewsPreview";
 import { ReviewForm } from "./ReviewForm";
+import { ShareBusinessMenu } from "./ShareBusinessMenu";
 import type { Business } from "@/types/business";
 import type { ReviewPreviewItem } from "./ReviewsPreview";
 import { cn } from "@/lib/utils";
@@ -165,6 +166,13 @@ const BusinessProfileLayoutComponent = ({
           )}
         </div>
         <div>
+          <div className="mb-4 flex gap-2">
+            <ShareBusinessMenu
+              businessId={business.id}
+              businessName={name}
+              className="flex-1"
+            />
+          </div>
           {onToggleFavorite && (
             <Button
               type="button"

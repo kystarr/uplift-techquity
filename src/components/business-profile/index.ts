@@ -21,3 +21,5 @@ export type {
 export { EditBusinessProfileForm } from "./EditBusinessProfileForm";
 export { FormField } from "./FormField";
 export type { FormFieldProps } from "./FormField";
+export { ShareBusinessMenu } from "./ShareBusinessMenu";
+export type { ShareBusinessMenuProps } from "./ShareBusinessMenu";
