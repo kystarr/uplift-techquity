@@ -483,6 +483,15 @@
                       "read",
                       "update"
                     ]
+                  },
+                  {
+                    "allow": "private",
+                    "provider": "iam",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update"
+                    ]
                   }
                 ]
               }
@@ -832,6 +841,15 @@
                 "rules": [
                   {
                     "allow": "private",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update"
+                    ]
+                  },
+                  {
+                    "allow": "private",
+                    "provider": "iam",
                     "operations": [
                       "create",
                       "read",
@@ -1562,8 +1580,78 @@
               "isRequired": false,
               "attributes": []
             },
+            "legalBusinessName": {
+              "name": "legalBusinessName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "businessType": {
+              "name": "businessType",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "contactName": {
+              "name": "contactName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
             "contactEmail": {
               "name": "contactEmail",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "phone": {
+              "name": "phone",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "website": {
+              "name": "website",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "description": {
+              "name": "description",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "street": {
+              "name": "street",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "city": {
+              "name": "city",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "state": {
+              "name": "state",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "zip": {
+              "name": "zip",
               "isArray": false,
               "type": "String",
               "isRequired": false,
@@ -2130,6 +2218,15 @@
               "list",
               "write",
               "delete"
+            ]
+          },
+          "verification-documents/*": {
+            "guest": [
+              "write"
+            ],
+            "authenticated": [
+              "get",
+              "list"
             ]
           },
           "business-media/${cognito-identity.amazonaws.com:sub}/*": {

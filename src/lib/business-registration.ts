@@ -7,10 +7,13 @@ import type { Step1BusinessInfoValues } from './validations/register';
 /**
  * Creates a Business record from the multi-step registration flow.
  * Handles Step 2 document uploads and persists Step 1 data to DynamoDB.
+ *
+ * Signed-in users: `ownerId` is Cognito `sub`; create uses user pool auth.
+ * Guests: omit `ownerId`; create uses IAM (unauthenticated identity) per schema `allow.guest().to(['create'])`.
  */
 export async function createBusinessFromRegistration(input: {
   step1: Step1BusinessInfoValues;
-  ownerId: string;
+  ownerId?: string;
   documents?: File[];
 }): Promise<any> {
   const { step1, ownerId, documents = [] } = input;
@@ -23,26 +26,21 @@ export async function createBusinessFromRegistration(input: {
   let verificationDocumentKeys: string[] = [];
 
   if (documents.length > 0) {
-    const session = await fetchAuthSession();
-    const identityId = session.identityId;
-
-    if (!identityId) {
-      throw new Error('Could not resolve identity ID for document upload.');
-    }
+    await fetchAuthSession({ forceRefresh: true });
 
     const uploadedResults = await Promise.all(
       documents.map(async (file) => {
         const timestamp = Date.now();
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const key = `verification-documents/${identityId}/${timestamp}-${safeName}`;
 
-        await uploadData({
-          path: key,
+        const { path } = await uploadData({
+          path: ({ identityId }) =>
+            `verification-documents/${identityId}/${timestamp}-${safeName}`,
           data: file,
-          options: { contentType: file.type || 'application/octet-stream' }
+          options: { contentType: file.type || 'application/octet-stream' },
         }).result;
 
-        return key;
+        return path;
       })
     );
     verificationDocumentKeys = uploadedResults;
@@ -51,13 +49,15 @@ export async function createBusinessFromRegistration(input: {
 
   // 2. Create Business record in DynamoDB
   // Using explicit property assignment and normalizing empties to undefined
+  const authMode = ownerId ? ('userPool' as const) : ('iam' as const);
+
   const createInput = {
     businessName: displayName,
     legalBusinessName: displayName,
     businessType: step1.category,
     contactName: contactName,
     contactEmail: step1.email,
-    ownerId: ownerId,
+    ...(ownerId ? { ownerId } : {}),
 
     phone: step1.phone || undefined,
     website: step1.website || undefined,
@@ -79,7 +79,9 @@ export async function createBusinessFromRegistration(input: {
     verificationDocumentKeys,
   };
 
-  const { data, errors } = await (amplifyDataClient.models.Business.create as any)(createInput);
+  const { data, errors } = await (amplifyDataClient.models.Business.create as any)(createInput, {
+    authMode,
+  });
 
   if (errors && errors.length > 0) {
     throw new Error(errors[0].message || 'Failed to create business');

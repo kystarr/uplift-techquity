@@ -56,7 +56,17 @@ const schema = a.schema({
   PendingVerificationQueueItem: a.customType({
     businessId: a.id().required(),
     businessName: a.string(),
+    legalBusinessName: a.string(),
+    businessType: a.string(),
+    contactName: a.string(),
     contactEmail: a.string(),
+    phone: a.string(),
+    website: a.string(),
+    description: a.string(),
+    street: a.string(),
+    city: a.string(),
+    state: a.string(),
+    zip: a.string(),
     pendingBusinessName: a.string(),
     pendingStreet: a.string(),
     pendingCity: a.string(),
@@ -166,6 +176,8 @@ const schema = a.schema({
     allow.guest().to(['create', 'read']),
     // Allow authenticated principals (incl. IAM-authenticated callers) for seeding/backend writes
     allow.authenticated().to(['create', 'read', 'update']),
+    // Explicit identity-pool support for admin/moderation fallback updates.
+    allow.authenticated('identityPool').to(['create', 'read', 'update']),
   ]),
   Review: a.model({
     businessId: a.string().required(),
@@ -218,6 +230,7 @@ const schema = a.schema({
     read: a.boolean().default(false),
   }).authorization((allow) => [
     allow.authenticated().to(['create', 'read', 'update']),
+    allow.authenticated('identityPool').to(['create', 'read', 'update']),
   ]),
 
   Favorite: a.model({
@@ -322,7 +335,12 @@ const schema = a.schema({
       details: a.string(),
     })
     .returns(a.ref('FlagAdminView'))
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   /**
@@ -334,7 +352,12 @@ const schema = a.schema({
       status: a.string(), // defaults to PENDING in resolver
     })
     .returns(a.ref('FlagAdminView').array())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   /**
@@ -347,7 +370,12 @@ const schema = a.schema({
       adminNotes: a.string(),
     })
     .returns(a.ref('FlagAdminView'))
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   /**
@@ -356,7 +384,12 @@ const schema = a.schema({
   flagCountsForAdmin: a
     .query()
     .returns(a.ref('FlagCounts'))
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   /** Business owner soft-hides a review until admin approves or restores. */
@@ -366,7 +399,12 @@ const schema = a.schema({
       reviewId: a.id().required(),
     })
     .returns(a.boolean())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   /** Admin approves permanent removal or restores visibility for a hidden review. */
@@ -378,19 +416,34 @@ const schema = a.schema({
       decision: a.string().required(),
     })
     .returns(a.boolean())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   listHiddenReviewsForAdmin: a
     .query()
     .returns(a.ref('HiddenReviewQueueItem').array())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   listPendingBusinessVerifications: a
     .query()
     .returns(a.ref('PendingVerificationQueueItem').array())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   /** Owner submits docs for name/address change; sets UNDER_REVIEW. */
@@ -406,7 +459,12 @@ const schema = a.schema({
       pendingZip: a.string(),
     })
     .returns(a.boolean())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   /** Approve or reject pending business identity verification. */
@@ -419,34 +477,59 @@ const schema = a.schema({
       adminNotes: a.string(),
     })
     .returns(a.boolean())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   adminRemoveReview: a
     .mutation()
     .arguments({ reviewId: a.id().required() })
     .returns(a.boolean())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   adminRemoveBusiness: a
     .mutation()
     .arguments({ businessId: a.id().required() })
     .returns(a.boolean())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   adminRemoveUser: a
     .mutation()
     .arguments({ userId: a.id().required() })
     .returns(a.boolean())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 
   listAdminActivityLog: a
     .query()
     .returns(a.ref('AdminActivityEntry').array())
-    .authorization((allow) => [allow.authenticated()])
+    .authorization((allow) => [
+      allow.authenticated(),
+      // Cognito Identity Pool (authMode iam / identityPool) — required for some clients
+      // where userPool JWT is not accepted for custom operations returning custom types.
+      allow.authenticated('identityPool'),
+    ])
     .handler(a.handler.function(moderation)),
 }).authorization((allow) => [
   allow.resource(postConfirmation).to(['mutate']),

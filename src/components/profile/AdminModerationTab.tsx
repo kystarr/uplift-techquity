@@ -7,10 +7,15 @@ import { useAdminFlags } from "@/hooks/useAdminFlags";
 import { useAdminModeration } from "@/hooks/useAdminModeration";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { amplifyDataClient } from "@/amplifyDataClient";
+import {
+  withDataAuthModeFallback,
+  withDataAuthModeMutation,
+} from "@/lib/data-query-auth-fallback";
 import { toast } from "sonner";
 import { Loader2, Bell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { getUrl } from "aws-amplify/storage";
 
 interface HiddenQueueRow {
   reviewId: string;
@@ -22,7 +27,17 @@ interface HiddenQueueRow {
 interface PendingBizRow {
   businessId: string;
   businessName?: string;
+  legalBusinessName?: string;
+  businessType?: string;
+  contactName?: string;
   contactEmail?: string;
+  phone?: string;
+  website?: string;
+  description?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
   pendingBusinessName?: string;
   pendingStreet?: string;
   pendingCity?: string;
@@ -59,22 +74,54 @@ export function AdminModerationTab() {
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
   const [removeUserId, setRemoveUserId] = useState("");
+  const [openingDocKey, setOpeningDocKey] = useState<string | null>(null);
 
   const loadQueues = async () => {
     setHiddenLoading(true);
     setPendingLoading(true);
     setActivityLoading(true);
     try {
-      const [h, p, a] = await Promise.all([
-        amplifyDataClient.queries.listHiddenReviewsForAdmin({}, { authMode: "userPool" }),
-        amplifyDataClient.queries.listPendingBusinessVerifications({}, { authMode: "userPool" }),
-        amplifyDataClient.queries.listAdminActivityLog({}, { authMode: "userPool" }),
+      const [hiddenResult, pendingResult, activityResult] = await Promise.allSettled([
+        withDataAuthModeFallback<HiddenQueueRow>("Hidden reviews", (authMode) =>
+          amplifyDataClient.queries.listHiddenReviewsForAdmin({}, { authMode })
+        ),
+        withDataAuthModeFallback<PendingBizRow>("Pending verification", (authMode) =>
+          amplifyDataClient.queries.listPendingBusinessVerifications({}, { authMode })
+        ),
+        withDataAuthModeFallback<ActivityRow>("Activity log", (authMode) =>
+          amplifyDataClient.queries.listAdminActivityLog({}, { authMode })
+        ),
       ]);
-      setHidden((Array.isArray(h.data) ? h.data : []) as HiddenQueueRow[]);
-      setPendingBiz((Array.isArray(p.data) ? p.data : []) as PendingBizRow[]);
-      setActivity((Array.isArray(a.data) ? a.data : []) as ActivityRow[]);
-    } catch {
-      toast.error("Failed to load admin queues");
+
+      if (hiddenResult.status === "fulfilled") {
+        setHidden(hiddenResult.value.data);
+      }
+
+      if (pendingResult.status === "fulfilled") {
+        setPendingBiz(pendingResult.value.data);
+      }
+
+      if (activityResult.status === "fulfilled") {
+        const fromQuery = activityResult.value.data;
+        if (fromQuery.length > 0) {
+          setActivity(fromQuery);
+        } else {
+          const fallbackActivity = await loadActivityFromNotifications();
+          setActivity(fallbackActivity);
+        }
+      }
+
+      if (
+        hiddenResult.status === "rejected" ||
+        pendingResult.status === "rejected" ||
+        activityResult.status === "rejected"
+      ) {
+        if (activityResult.status === "rejected") {
+          const fallbackActivity = await loadActivityFromNotifications();
+          setActivity(fallbackActivity);
+        }
+        toast.error("Some moderation queues could not be loaded.");
+      }
     } finally {
       setHiddenLoading(false);
       setPendingLoading(false);
@@ -147,7 +194,7 @@ export function AdminModerationTab() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="flags" className="w-full">
+      <Tabs defaultValue="verify" className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="flags">Flag queue ({counts.ALL})</TabsTrigger>
           <TabsTrigger value="hidden">Hidden reviews</TabsTrigger>
@@ -192,8 +239,8 @@ export function AdminModerationTab() {
                           toast.success("Flag resolved");
                           await refetch();
                           await loadQueues();
-                        } catch {
-                          toast.error("Failed");
+                        } catch (e) {
+                          toast.error(toReadableErrorMessage(e, "Failed to resolve flag"));
                         }
                       }}
                     >
@@ -217,8 +264,8 @@ export function AdminModerationTab() {
                             toast.success("Review removed");
                             await refetch();
                             await loadQueues();
-                          } catch {
-                            toast.error("Remove failed");
+                          } catch (e) {
+                            toast.error(toReadableErrorMessage(e, "Failed to remove review"));
                           }
                         }}
                       >
@@ -250,8 +297,8 @@ export function AdminModerationTab() {
                         await adminResolveHiddenReview(h.reviewId, "APPROVE_HIDE");
                         toast.success("Hide approved");
                         await loadQueues();
-                      } catch {
-                        toast.error("Failed");
+                      } catch (e) {
+                        toast.error(toReadableErrorMessage(e, "Failed to approve hide"));
                       }
                     }}
                   >
@@ -266,8 +313,8 @@ export function AdminModerationTab() {
                         await adminResolveHiddenReview(h.reviewId, "RESTORE");
                         toast.success("Review restored");
                         await loadQueues();
-                      } catch {
-                        toast.error("Failed");
+                      } catch (e) {
+                        toast.error(toReadableErrorMessage(e, "Failed to restore review"));
                       }
                     }}
                   >
@@ -289,20 +336,47 @@ export function AdminModerationTab() {
               <div key={b.businessId} className="border rounded-md p-3 text-sm space-y-2">
                 <p className="font-medium">{b.businessName}</p>
                 <p className="text-xs text-muted-foreground">{b.contactEmail}</p>
-                <pre className="text-xs bg-muted p-2 rounded-md overflow-x-auto">
-                  {JSON.stringify(
-                    {
-                      pendingBusinessName: b.pendingBusinessName,
-                      pendingStreet: b.pendingStreet,
-                      pendingCity: b.pendingCity,
-                      pendingState: b.pendingState,
-                      pendingZip: b.pendingZip,
-                      docs: b.verificationDocumentKeys,
-                    },
-                    null,
-                    2
+                <div className="text-xs bg-muted p-2 rounded-md space-y-1">
+                  {applicationDetailsForRow(b).map(({ label, value }) => (
+                    <p key={label}>
+                      <span className="font-medium">{label}:</span> {value}
+                    </p>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium">Verification documents</p>
+                  {b.verificationDocumentKeys && b.verificationDocumentKeys.length > 0 ? (
+                    <ul className="space-y-1">
+                      {b.verificationDocumentKeys.map((key) => (
+                        <li key={key} className="flex items-center justify-between gap-2 text-xs">
+                          <span className="truncate text-muted-foreground">
+                            {readableVerificationFileName(key)}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={openingDocKey === key}
+                            onClick={async () => {
+                              try {
+                                setOpeningDocKey(key);
+                                const { url } = await getUrl({ path: key });
+                                window.open(url.toString(), "_blank", "noopener,noreferrer");
+                              } catch (e) {
+                                toast.error(toReadableErrorMessage(e, "Unable to open document"));
+                              } finally {
+                                setOpeningDocKey(null);
+                              }
+                            }}
+                          >
+                            {openingDocKey === key ? "Opening..." : "View"}
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No documents attached.</p>
                   )}
-                </pre>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -312,8 +386,8 @@ export function AdminModerationTab() {
                         await adminResolveBusinessVerification(b.businessId, "APPROVE");
                         toast.success("Approved");
                         await loadQueues();
-                      } catch {
-                        toast.error("Failed");
+                      } catch (e) {
+                        toast.error(toReadableErrorMessage(e, "Failed to approve verification"));
                       }
                     }}
                   >
@@ -328,8 +402,8 @@ export function AdminModerationTab() {
                         await adminResolveBusinessVerification(b.businessId, "REJECT");
                         toast.success("Rejected");
                         await loadQueues();
-                      } catch {
-                        toast.error("Failed");
+                      } catch (e) {
+                        toast.error(toReadableErrorMessage(e, "Failed to reject verification"));
                       }
                     }}
                   >
@@ -377,8 +451,8 @@ export function AdminModerationTab() {
                   toast.success("User removed");
                   setRemoveUserId("");
                   await loadQueues();
-                } catch {
-                  toast.error("Failed");
+                } catch (e) {
+                  toast.error(toReadableErrorMessage(e, "Failed to remove user"));
                 }
               }}
             >
@@ -392,6 +466,46 @@ export function AdminModerationTab() {
       </Tabs>
     </div>
   );
+}
+
+function applicationDetailsForRow(b: PendingBizRow): Array<{ label: string; value: string }> {
+  const effectiveBusinessName = b.pendingBusinessName?.trim() || b.businessName?.trim() || "—";
+  const effectiveStreet = b.pendingStreet?.trim() || b.street?.trim() || "—";
+  const effectiveCity = b.pendingCity?.trim() || b.city?.trim() || "—";
+  const effectiveState = b.pendingState?.trim() || b.state?.trim() || "—";
+  const effectiveZip = b.pendingZip?.trim() || b.zip?.trim() || "—";
+
+  return [
+    { label: "Business Name", value: effectiveBusinessName },
+    { label: "Business Type", value: b.businessType?.trim() || "—" },
+    { label: "Business Owner Name", value: b.contactName?.trim() || "—" },
+    { label: "Contact Email", value: b.contactEmail?.trim() || "—" },
+    { label: "Phone", value: b.phone?.trim() || "—" },
+    { label: "Website", value: b.website?.trim() || "—" },
+    { label: "Description", value: b.description?.trim() || "—" },
+    { label: "Street", value: effectiveStreet },
+    { label: "City", value: effectiveCity },
+    { label: "State", value: effectiveState },
+    { label: "ZIP", value: effectiveZip },
+  ];
+}
+
+function toReadableErrorMessage(input: unknown, fallback: string): string {
+  const message =
+    input instanceof Error ? input.message : typeof input === "string" ? input : "";
+  if (!message) return fallback;
+  if (message.includes("GraphQL transport error")) {
+    if (message.toLowerCase().includes("unauthorized")) {
+      return "You do not have permission to perform this action.";
+    }
+    return fallback;
+  }
+  return message.length > 180 ? `${message.slice(0, 177)}...` : message;
+}
+
+function readableVerificationFileName(storageKey: string): string {
+  const leaf = storageKey.split("/").pop() || storageKey;
+  return leaf.replace(/^\d+-/, "");
 }
 
 function LabelledInput({
@@ -415,13 +529,43 @@ function LabelledInput({
 
 async function fetchBusinessIdForReview(reviewId: string): Promise<string | null> {
   try {
-    const res = await amplifyDataClient.models.Review.get(
-      { id: reviewId },
-      { authMode: "userPool" }
+    const row = await withDataAuthModeMutation<{ businessId?: string | null }>(
+      "Review.get",
+      (authMode) => amplifyDataClient.models.Review.get({ id: reviewId }, { authMode })
     );
-    const data = res.data as { businessId?: string | null } | null;
-    return data?.businessId ?? null;
+    return row?.businessId ?? null;
   } catch {
     return null;
   }
+}
+
+async function loadActivityFromNotifications(): Promise<ActivityRow[]> {
+  const { data } = await withDataAuthModeFallback<Record<string, unknown>>(
+    "AdminNotification.activity",
+    (authMode) =>
+      (amplifyDataClient.models as any).AdminNotification.list(
+        { filter: { type: { eq: "ADMIN_ACTIVITY" } }, limit: 100 },
+        { authMode }
+      )
+  );
+
+  return data
+    .map((row): ActivityRow => {
+      const rawMessage = typeof row.message === "string" ? row.message : "{}";
+      let parsed: Record<string, unknown> = {};
+      try {
+        parsed = JSON.parse(rawMessage) as Record<string, unknown>;
+      } catch {
+        parsed = {};
+      }
+      return {
+        id: String(row.id ?? ""),
+        action: String(parsed.action ?? row.title ?? ""),
+        targetType: parsed.targetType != null ? String(parsed.targetType) : undefined,
+        targetId: parsed.targetId != null ? String(parsed.targetId) : undefined,
+        createdAt: row.createdAt != null ? String(row.createdAt) : undefined,
+      };
+    })
+    .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
+    .slice(0, 25);
 }
