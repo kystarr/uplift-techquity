@@ -483,6 +483,15 @@
                       "read",
                       "update"
                     ]
+                  },
+                  {
+                    "allow": "private",
+                    "provider": "iam",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update"
+                    ]
                   }
                 ]
               }
@@ -837,6 +846,15 @@
                       "read",
                       "update"
                     ]
+                  },
+                  {
+                    "allow": "private",
+                    "provider": "iam",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update"
+                    ]
                   }
                 ]
               }
@@ -951,6 +969,96 @@
                       "create",
                       "update",
                       "delete",
+                      "read"
+                    ]
+                  },
+                  {
+                    "allow": "private",
+                    "operations": [
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "BusinessProfileView": {
+          "name": "BusinessProfileView",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "businessId": {
+              "name": "businessId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "viewerId": {
+              "name": "viewerId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "viewedAt": {
+              "name": "viewedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": true,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": [],
+              "isReadOnly": true
+            }
+          },
+          "syncable": true,
+          "pluralName": "BusinessProfileViews",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "private",
+                    "operations": [
+                      "create",
+                      "read"
+                    ]
+                  },
+                  {
+                    "allow": "public",
+                    "provider": "iam",
+                    "operations": [
+                      "create",
                       "read"
                     ]
                   }
@@ -1472,8 +1580,78 @@
               "isRequired": false,
               "attributes": []
             },
+            "legalBusinessName": {
+              "name": "legalBusinessName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "businessType": {
+              "name": "businessType",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "contactName": {
+              "name": "contactName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
             "contactEmail": {
               "name": "contactEmail",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "phone": {
+              "name": "phone",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "website": {
+              "name": "website",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "description": {
+              "name": "description",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "street": {
+              "name": "street",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "city": {
+              "name": "city",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "state": {
+              "name": "state",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "zip": {
+              "name": "zip",
               "isArray": false,
               "type": "String",
               "isRequired": false,
@@ -1528,6 +1706,115 @@
               "type": "String",
               "isRequired": false,
               "attributes": []
+            }
+          }
+        },
+        "ChatAssistantTurn": {
+          "name": "ChatAssistantTurn",
+          "fields": {
+            "role": {
+              "name": "role",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            }
+          }
+        },
+        "AssistantBusinessCard": {
+          "name": "AssistantBusinessCard",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "name": {
+              "name": "name",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "category": {
+              "name": "category",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "rating": {
+              "name": "rating",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true,
+              "attributes": []
+            },
+            "reviewCount": {
+              "name": "reviewCount",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true,
+              "attributes": []
+            },
+            "verified": {
+              "name": "verified",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": true,
+              "attributes": []
+            },
+            "city": {
+              "name": "city",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "state": {
+              "name": "state",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "imageUrl": {
+              "name": "imageUrl",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "AssistantChatReply": {
+          "name": "AssistantChatReply",
+          "fields": {
+            "reply": {
+              "name": "reply",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "referencedBusinesses": {
+              "name": "referencedBusinesses",
+              "isArray": true,
+              "type": {
+                "nonModel": "AssistantBusinessCard"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
             }
           }
         },
@@ -1648,6 +1935,43 @@
         }
       },
       "mutations": {
+        "chatWithAssistant": {
+          "name": "chatWithAssistant",
+          "isArray": false,
+          "type": {
+            "nonModel": "AssistantChatReply"
+          },
+          "isRequired": false,
+          "arguments": {
+            "message": {
+              "name": "message",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "history": {
+              "name": "history",
+              "isArray": true,
+              "type": {
+                "input": "ChatAssistantTurnInput"
+              },
+              "isRequired": false,
+              "isArrayNullable": true
+            },
+            "latitude": {
+              "name": "latitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false
+            },
+            "longitude": {
+              "name": "longitude",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false
+            }
+          }
+        },
         "submitModerationFlag": {
           "name": "submitModerationFlag",
           "isArray": false,
@@ -1857,6 +2181,25 @@
             }
           }
         }
+      },
+      "inputs": {
+        "ChatAssistantTurnInput": {
+          "name": "ChatAssistantTurnInput",
+          "attributes": {
+            "role": {
+              "name": "role",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        }
       }
     }
   },
@@ -1875,6 +2218,15 @@
               "list",
               "write",
               "delete"
+            ]
+          },
+          "verification-documents/*": {
+            "guest": [
+              "write"
+            ],
+            "authenticated": [
+              "get",
+              "list"
             ]
           },
           "business-media/${cognito-identity.amazonaws.com:sub}/*": {

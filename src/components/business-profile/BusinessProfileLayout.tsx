@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared";
-import { ChevronLeft, MessageCircle } from "lucide-react";
+import { ChevronLeft, Heart, MessageCircle, Trash2 } from "lucide-react";
 import { BusinessHeader } from "./BusinessHeader";
 import { BusinessContactCard } from "./BusinessContactCard";
 import { BusinessGallery } from "./BusinessGallery";
@@ -25,12 +25,21 @@ export interface BusinessProfileLayoutProps extends React.HTMLAttributes<HTMLDiv
   /** Optional review preview data (from same or separate API) */
   reviewsPreview?: ReviewPreviewItem[];
   reviewCount?: number;
+  canModerateReviews?: boolean;
+  onFlagReview?: (reviewId: string) => void | Promise<void>;
   /** Called when a user submits a review */
   onSubmitReview?: (params: { businessId: string; rating: number; text: string; authorName: string }) => Promise<void>;
   submittingReview?: boolean;
   /** Optional action to start/open a message conversation for this business. */
   onMessageBusiness?: () => void;
   messagingInProgress?: boolean;
+  /** Optional action to favorite/unfavorite this business from profile page. */
+  onToggleFavorite?: () => void;
+  isFavorite?: boolean;
+  favoriteInProgress?: boolean;
+  /** Admin-only destructive action for removing this business. */
+  onRemoveBusiness?: () => void;
+  removeBusinessInProgress?: boolean;
   /** Back link href (e.g. /search). If not set, breadcrumb still shows Search > Business name */
   backHref?: string;
 }
@@ -44,10 +53,17 @@ const BusinessProfileLayoutComponent = ({
   business,
   reviewsPreview = [],
   reviewCount = 0,
+  canModerateReviews = false,
+  onFlagReview,
   onSubmitReview,
   submittingReview = false,
   onMessageBusiness,
   messagingInProgress = false,
+  onToggleFavorite,
+  isFavorite = false,
+  favoriteInProgress = false,
+  onRemoveBusiness,
+  removeBusinessInProgress = false,
   backHref = "/search",
   className,
   ...props
@@ -133,6 +149,8 @@ const BusinessProfileLayoutComponent = ({
               reviews={reviewsPreview}
               averageRating={averageRating}
               totalCount={reviewCount}
+              canModerateReviews={canModerateReviews}
+              onFlagReview={onFlagReview}
               onViewAll={() => document.getElementById("reviews-section")?.scrollIntoView?.({ behavior: "smooth" })}
             />
           </section>
@@ -147,6 +165,18 @@ const BusinessProfileLayoutComponent = ({
           )}
         </div>
         <div>
+          {onToggleFavorite && (
+            <Button
+              type="button"
+              variant={isFavorite ? "default" : "outline"}
+              className="mb-4 w-full"
+              onClick={onToggleFavorite}
+              disabled={favoriteInProgress}
+            >
+              <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+              {isFavorite ? "Saved to favorites" : "Save to favorites"}
+            </Button>
+          )}
           {onMessageBusiness && (
             <Button
               type="button"
@@ -156,6 +186,18 @@ const BusinessProfileLayoutComponent = ({
             >
               <MessageCircle className="h-4 w-4" />
               Message business
+            </Button>
+          )}
+          {onRemoveBusiness && (
+            <Button
+              type="button"
+              variant="destructive"
+              className="mb-4 w-full"
+              onClick={onRemoveBusiness}
+              disabled={removeBusinessInProgress}
+            >
+              <Trash2 className="h-4 w-4" />
+              Remove business
             </Button>
           )}
           <BusinessContactCard email={email} phone={phone} website={website} street={street} city={city} state={state} zip={zip} />

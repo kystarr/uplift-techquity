@@ -23,9 +23,9 @@ export interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const paddingClasses = {
   none: "",
-  sm: "py-4",
-  default: "py-8",
-  lg: "py-12",
+  sm: "py-6",
+  default: "py-10",
+  lg: "py-14",
 };
 
 export const Container = React.forwardRef<HTMLDivElement, ContainerProps>(

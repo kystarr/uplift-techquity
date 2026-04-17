@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2 } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { BusinessRating } from "./BusinessRating";
 import { BusinessTags } from "./BusinessTags";
 import { CategoryBadge } from "./CategoryBadge";
@@ -41,11 +41,10 @@ const BusinessHeaderComponent = ({
       </h1>
       {isVerified && (
         <Badge
-          className="bg-success text-success-foreground gap-1"
+          className="bg-success text-success-foreground p-1.5"
           aria-label="Verified business"
         >
-          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-          Verified
+          <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
         </Badge>
       )}
     </div>

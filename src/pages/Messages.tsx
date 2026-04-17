@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Send, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Navigation } from "@/components/Navigation";
 import { useMessages, MESSAGES_DRAFT_SEGMENT } from "@/hooks/useMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
@@ -128,6 +127,22 @@ const Messages = () => {
 
   useEffect(() => {
     if (!conversationId || conversationId === MESSAGES_DRAFT_SEGMENT) return;
+
+    const poll = () => {
+      // Quiet thread refresh so new incoming messages show up live.
+      void fetchMessages(conversationId, { quiet: true });
+    };
+
+    const intervalId = window.setInterval(() => {
+      if (document.hidden) return;
+      poll();
+    }, 2500);
+
+    return () => window.clearInterval(intervalId);
+  }, [conversationId, fetchMessages]);
+
+  useEffect(() => {
+    if (!conversationId || conversationId === MESSAGES_DRAFT_SEGMENT) return;
     void markConversationAsRead(conversationId);
   }, [conversationId, markConversationAsRead]);
 
@@ -239,10 +254,13 @@ const Messages = () => {
     Boolean(conversationId) &&
     conversationId !== MESSAGES_DRAFT_SEGMENT &&
     Boolean(conversation);
+  const canVisitBusinessFromHeader =
+    Boolean(conversation?.businessId) &&
+    Boolean(user) &&
+    user?.userId === conversation?.participantId;
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-background">
-      <Navigation />
+    <div className="flex min-h-[calc(100vh-4rem)] min-h-0 flex-col overflow-hidden bg-background">
       <DeleteConversationForMeDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
@@ -284,26 +302,57 @@ const Messages = () => {
               </div>
             ) : (
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Avatar className="h-12 w-12 shrink-0">
-                  <AvatarImage
-                    src={counterparty?.image || undefined}
-                    alt={counterparty?.title || "Chat"}
-                  />
-                  <AvatarFallback>{(counterparty?.title || "C")[0]}</AvatarFallback>
-                </Avatar>
+                {canVisitBusinessFromHeader ? (
+                  <Link
+                    to={`/business/${conversation.businessId}`}
+                    className="flex items-center gap-3 min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label={`View ${counterparty?.title || "business"} profile`}
+                  >
+                    <Avatar className="h-12 w-12 shrink-0">
+                      <AvatarImage
+                        src={counterparty?.image || undefined}
+                        alt={counterparty?.title || "Chat"}
+                      />
+                      <AvatarFallback>{(counterparty?.title || "C")[0]}</AvatarFallback>
+                    </Avatar>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <h2 className="font-semibold text-foreground truncate">
-                      {counterparty?.title || "Chat"}
-                    </h2>
-                    {viewerUnread > 0 && (
-                      <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
-                        Unread
-                      </span>
-                    )}
-                  </div>
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h2 className="font-semibold text-foreground truncate hover:text-primary">
+                          {counterparty?.title || "Chat"}
+                        </h2>
+                        {viewerUnread > 0 && (
+                          <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                            Unread
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <>
+                    <Avatar className="h-12 w-12 shrink-0">
+                      <AvatarImage
+                        src={counterparty?.image || undefined}
+                        alt={counterparty?.title || "Chat"}
+                      />
+                      <AvatarFallback>{(counterparty?.title || "C")[0]}</AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h2 className="font-semibold text-foreground truncate">
+                          {counterparty?.title || "Chat"}
+                        </h2>
+                        {viewerUnread > 0 && (
+                          <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                            Unread
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
                 {canOpenThreadMenu && (
                   <ConversationChatMenu
                     openable

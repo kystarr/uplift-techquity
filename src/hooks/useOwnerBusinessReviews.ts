@@ -59,17 +59,5 @@ export function useOwnerBusinessReviews(businessId: string | undefined) {
     fetchReviews();
   }, [fetchReviews]);
 
-  const hideReview = useCallback(
-    async (reviewId: string) => {
-      await amplifyDataClient.mutations.hideReview({ reviewId }, { authMode: 'userPool' });
-      setReviews((prev) =>
-        prev.map((r) =>
-          r.id === reviewId ? { ...r, moderationStatus: 'hidden_pending_admin' } : r
-        )
-      );
-    },
-    []
-  );
-
-  return { reviews, loading, error, refetch: fetchReviews, hideReview };
+  return { reviews, loading, error, refetch: fetchReviews };
 }

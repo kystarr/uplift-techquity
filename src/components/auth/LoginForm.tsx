@@ -77,7 +77,7 @@ export const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
           )}
         />
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Signing in..." : "Sign In"}
+          {isLoading ? "Signing In/Signing Up..." : "Sign In/Sign Up"}
         </Button>
       </form>
     </Form>

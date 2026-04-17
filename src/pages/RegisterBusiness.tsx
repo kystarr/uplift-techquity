@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
 import { Progress } from "@/components/ui/progress";
 import {
   Step1_BusinessInfo,
@@ -37,10 +36,9 @@ const RegisterBusiness = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+    <div className="bg-background">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 glass-panel rounded-2xl p-5">
           <p className="text-sm font-medium text-muted-foreground mb-2">
             Step {currentStep} of {TOTAL_STEPS}
           </p>
@@ -69,22 +67,19 @@ const RegisterBusiness = () => {
             step2Files={step2Files}
             onBack={goBack}
             onSubmit={async () => {
-              if (!user) {
-                throw new Error("You must be signed in to register a business.");
-              }
               if (!step1Data) {
                 throw new Error("Missing business information from Step 1.");
               }
 
-              // Create Business record in Amplify Data backend and upload
-              // any Step 2 verification documents to S3.
               const sub = await getCognitoSub();
-              if (!sub) {
-                throw new Error("Could not resolve your account id. Try signing out and back in.");
+              if (user && !sub) {
+                throw new Error(
+                  "Could not resolve your account id. Try signing out and back in."
+                );
               }
               await createBusinessFromRegistration({
                 step1: step1Data,
-                ownerId: sub,
+                ...(sub ? { ownerId: sub } : {}),
                 documents: step2Files,
               });
 
