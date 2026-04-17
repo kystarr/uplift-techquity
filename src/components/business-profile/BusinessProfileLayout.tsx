@@ -166,6 +166,13 @@ const BusinessProfileLayoutComponent = ({
           )}
         </div>
         <div>
+          <div className="mb-4 flex gap-2">
+            <ShareBusinessMenu
+              businessId={business.id}
+              businessName={name}
+              className="flex-1"
+            />
+          </div>
           {onToggleFavorite && (
             <Button
               type="button"
