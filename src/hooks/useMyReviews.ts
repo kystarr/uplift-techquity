@@ -5,6 +5,10 @@ import { amplifyDataClient } from '@/amplifyDataClient';
 export interface MyReviewRow {
   id: string;
   businessId: string;
+  businessName: string;
+  businessCategory: string;
+  businessImage?: string;
+  businessVerified: boolean;
   rating: number;
   text: string;
   authorName: string;
@@ -24,10 +28,35 @@ export function useMyReviews() {
       const u = await getCurrentUser();
       const authorId = u.userId;
       const res = await (amplifyDataClient.models as any).Review.list({ authMode: 'userPool' });
+      const businessRes = await (amplifyDataClient.models as any).Business.list({ authMode: 'userPool' });
+      const businessById = new Map((businessRes.data ?? []).map((b: any) => [b.id, b]));
       const mine = (res.data ?? [])
         .filter((r: any) => r.authorId === authorId)
         .map(
-          (r: any): MyReviewRow => ({
+          (r: any): MyReviewRow => {
+            const business = businessById.get(r.businessId);
+            return {
+              ...(business
+              ? {
+                  businessName: business.businessName ?? 'Business',
+                  businessCategory:
+                    (Array.isArray(business.categories) &&
+                      business.categories[0]) ||
+                    business.businessType ||
+                    'Business',
+                  businessImage:
+                    Array.isArray(business.images) &&
+                    business.images.length > 0
+                      ? business.images[0]
+                      : undefined,
+                  businessVerified: business.verified ?? false,
+                }
+              : {
+                  businessName: 'Business',
+                  businessCategory: 'Business',
+                  businessImage: undefined,
+                  businessVerified: false,
+                }),
             id: r.id,
             businessId: r.businessId,
             rating: typeof r.rating === 'number' ? r.rating : 0,
@@ -35,7 +64,8 @@ export function useMyReviews() {
             authorName: r.authorName ?? '',
             createdAt: r.createdAt,
             moderationStatus: r.moderationStatus ?? null,
-          })
+          };
+          }
         )
         .sort(
           (a: MyReviewRow, b: MyReviewRow) =>

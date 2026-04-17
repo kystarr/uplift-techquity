@@ -32,28 +32,39 @@ const RatingDisplayComponent = ({
   className,
   ...props
 }: RatingDisplayProps) => {
-  const clamped = Math.min(5, Math.max(0, averageRating));
+  const safeAverageRating = Number.isFinite(averageRating) ? averageRating : 0;
+  const clamped = Math.min(5, Math.max(0, safeAverageRating));
+  const safeReviewCount =
+    reviewCount != null ? Math.max(0, Math.floor(reviewCount)) : undefined;
+
   const fullStars = Math.floor(clamped);
-  const hasHalf = clamped % 1 >= 0.25 && clamped % 1 < 0.75;
+  const fractional = clamped % 1;
+  const hasHalf = fractional >= 0.25 && fractional < 0.75;
   const starClass = sizeClasses[size];
+  const getStarToneClass = (index: number) => {
+    if (index < fullStars) {
+      return "fill-yellow-500 text-yellow-500";
+    }
+
+    if (index === fullStars && hasHalf) {
+      return "fill-yellow-500/50 text-yellow-500/50";
+    }
+
+    return "text-muted fill-muted/30";
+  };
 
   return (
     <div
       className={cn("flex items-center gap-1.5 flex-wrap", className)}
       role="img"
-      aria-label={`Rating: ${clamped.toFixed(1)} out of 5${reviewCount != null ? `, ${reviewCount} reviews` : ""}`}
+      aria-label={`Rating: ${clamped.toFixed(1)} out of 5${safeReviewCount != null ? `, ${safeReviewCount} reviews` : ""}`}
       {...props}
     >
       <div className="flex items-center">
         {Array.from({ length: 5 }).map((_, i) => (
           <Star
             key={i}
-            className={cn(
-              starClass,
-              i < fullStars && "fill-yellow-500 text-yellow-500",
-              i === fullStars && hasHalf && "fill-yellow-500/50 text-yellow-500/50",
-              i > fullStars && !(i === fullStars && hasHalf) && "text-muted fill-muted/30"
-            )}
+            className={cn(starClass, getStarToneClass(i))}
             aria-hidden
           />
         ))}
@@ -63,8 +74,8 @@ const RatingDisplayComponent = ({
           {clamped.toFixed(1)}
         </span>
       )}
-      {reviewCount != null && reviewCount > 0 && (
-        <span className="text-muted-foreground text-sm">({reviewCount})</span>
+      {safeReviewCount != null && safeReviewCount > 0 && (
+        <span className="text-muted-foreground text-sm">({safeReviewCount})</span>
       )}
     </div>
   );

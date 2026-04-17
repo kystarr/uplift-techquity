@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Container } from "@/components/shared";
 import { LoginForm, SignUpForm } from "@/components/auth";
 import type { LoginFormValues, SignUpFormValues } from "@/lib/validations/auth";
-import { Navigation } from "@/components/Navigation";
 
 // 1. Added confirmSignUp to imports
 import { signIn, signUp, confirmSignUp } from 'aws-amplify/auth';
@@ -120,7 +119,7 @@ const Auth = () => {
 
       toast({
         title: "Account Verified",
-        description: "Your account is now active. Please sign in.",
+        description: "Your account is now active. Please Sign In/Sign Up.",
       });
       
       setNeedsConfirmation(false); // Return to Login/Tabs view
@@ -136,8 +135,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <div className="bg-background">
       <Container maxWidth="md" padding="lg">
         <div className="max-w-md mx-auto">
         {/* 5. Conditional Rendering: Show confirmation UI if needed, else show Tabs */}
@@ -174,7 +172,7 @@ const Auth = () => {
         ) : (
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signin">Sign In/Sign Up</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
 
@@ -182,7 +180,7 @@ const Auth = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Welcome Back</CardTitle>
-                  <CardDescription>Sign in to your account to continue</CardDescription>
+                  <CardDescription>Sign In/Sign Up to your account to continue</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <LoginForm onSubmit={handleLogin} isLoading={isLoading} />
@@ -204,7 +202,7 @@ const Auth = () => {
           </Tabs>
         )}
 
-        <Card className="mt-6">
+              <Card className="mt-8">
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold text-foreground mb-2">
               Business Owner?

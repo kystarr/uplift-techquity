@@ -134,20 +134,29 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">;
 
-function toast({ ...props }: Toast) {
+function toast({ duration = 5_000, ...props }: Toast) {
   const id = genId();
+  let autoDismissTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const dismiss = () => {
+    if (autoDismissTimer !== undefined) {
+      clearTimeout(autoDismissTimer);
+      autoDismissTimer = undefined;
+    }
+    dispatch({ type: "DISMISS_TOAST", toastId: id });
+  };
 
   const update = (props: ToasterToast) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },
     });
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id });
 
   dispatch({
     type: "ADD_TOAST",
     toast: {
       ...props,
+      duration,
       id,
       open: true,
       onOpenChange: (open) => {
@@ -155,6 +164,12 @@ function toast({ ...props }: Toast) {
       },
     },
   });
+
+  // Radix pauses its close timer while the viewport is focused or after pointer
+  // activity, so toasts can appear "stuck" until swiped. This timer always runs.
+  if (duration > 0 && duration !== Number.POSITIVE_INFINITY) {
+    autoDismissTimer = setTimeout(dismiss, duration);
+  }
 
   return {
     id: id,

@@ -1,34 +1,57 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Search, User, MessageCircle, LogOut } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 export const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const isSearchPage = location.pathname === "/search";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const go = (path: string) => {
-    setMobileMenuOpen(false);
+    setMenuOpen(false);
     navigate(path);
   };
 
+  useEffect(() => {
+    const onClickAway = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onClickAway);
+    return () => document.removeEventListener("mousedown", onClickAway);
+  }, []);
+
+  const navItems = user
+    ? [
+        { label: "Search", onClick: () => go("/search") },
+        { label: "Profile", onClick: () => go("/profile") },
+        { label: "Messages", onClick: () => go("/messages") },
+      ]
+    : [
+        { label: "Search", onClick: () => go("/search") },
+        { label: "Register Business", onClick: () => go("/register/1") },
+        { label: "Sign In/Sign Up", onClick: () => go("/auth") },
+      ];
+
   return (
-    <nav className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
+    <nav className="sticky top-0 z-50 w-full rounded-b-3xl border border-white/25 border-t-0 bg-glass backdrop-blur-[var(--blur-glass)] shadow-[0_10px_40px_-12px_hsl(220_40%_20%/0.12)] dark:shadow-[0_12px_48px_-8px_hsl(0_0%_0%/0.45)] motion-reduce:shadow-glass">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
-          {/* Left side: logo (no words) */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Button
               variant="ghost"
               size="icon"
               aria-label="Go to landing page"
               onClick={() => go("/")}
+              className="rounded-xl"
             >
               <img
                 src="/Uplift_Logo_No_Words.png"
@@ -38,137 +61,74 @@ export const Navigation = () => {
             </Button>
           </div>
 
-          {/* Right side: search (all pages except /search), profile/messages, sign out */}
-          <div className="flex items-center gap-2">
-            {!user && (
-              <div className="hidden md:flex items-center gap-2">
-                <Button variant="outline" onClick={() => go("/auth")}>
-                  Sign In
-                </Button>
-                <Button onClick={() => go("/register/1")}>
-                  Register Your Business
-                </Button>
-              </div>
-            )}
-
-            {!isSearchPage && (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Go to search"
-                onClick={() => go("/search")}
-              >
-                <Search className="h-5 w-5" />
-              </Button>
-            )}
-
-            {user && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Profile"
-                  onClick={() => go("/profile")}
-                >
-                  <User className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Messages"
-                  onClick={() => go("/messages")}
-                >
-                  <MessageCircle className="h-5 w-5" />
-                </Button>
-              </>
-            )}
-
-            {user ? (
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={async () => {
-                  await signOut();
-                  go("/");
-                }}
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </Button>
-            ) : null}
-
+          <div ref={menuRef} className="relative">
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
               aria-label="Open menu"
-              onClick={() => setMobileMenuOpen((v) => !v)}
+              className={cn("rounded-xl border border-white/40 bg-white/35 hover:bg-white/55 dark:bg-white/10 dark:hover:bg-white/20")}
+              onClick={() => setMenuOpen((v) => !v)}
             >
               <Menu className="h-5 w-5" />
             </Button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-3 w-72 rounded-2xl glass-panel-strong p-3 space-y-3">
+                <div className="rounded-xl bg-background/55 dark:bg-background/35 p-1 border border-white/20">
+                  <div className="grid grid-cols-2 gap-1">
+                    <button
+                      type="button"
+                      className={cn(
+                        "rounded-lg px-3 py-2 text-sm font-medium transition-smooth",
+                        resolvedTheme !== "dark"
+                          ? "bg-gradient-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                      onClick={() => setTheme("light")}
+                    >
+                      Light
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        "rounded-lg px-3 py-2 text-sm font-medium transition-smooth",
+                        resolvedTheme === "dark"
+                          ? "bg-gradient-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                      onClick={() => setTheme("dark")}
+                    >
+                      Dark
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {navItems.map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={item.onClick}
+                      className="w-full text-left rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/85 hover:bg-white/35 dark:hover:bg-white/10"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                {user && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={async () => {
+                      await signOut();
+                      go("/");
+                    }}
+                  >
+                    Sign Out
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
-
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-3 border-t border-border">
-            {!isSearchPage && (
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2"
-                onClick={() => go("/search")}
-              >
-                <Search className="h-4 w-4" />
-                Search
-              </Button>
-            )}
-
-            {!user ? (
-              <>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => go("/auth")}
-                >
-                  <User className="h-4 w-4" />
-                  Sign In
-                </Button>
-                <Button className="w-full justify-start gap-2" onClick={() => go("/register/1")}>
-                  Register Your Business
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => go("/profile")}
-                >
-                  <User className="h-4 w-4" />
-                  Profile
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => go("/messages")}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Messages
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={async () => {
-                    await signOut();
-                    go("/");
-                  }}
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </Button>
-              </>
-            )}
-          </div>
-        )}
       </div>
     </nav>
   );

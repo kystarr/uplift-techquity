@@ -56,7 +56,11 @@ export function useFlag(): UseFlagResult {
           );
           if (res.data) {
             await (amplifyDataClient.models as any).Review.update(
-              { id: params.targetId, flagCount: (res.data.flagCount ?? 0) + 1 },
+              {
+                id: params.targetId,
+                flagCount: (res.data.flagCount ?? 0) + 1,
+                moderationStatus: 'hidden_pending_admin',
+              },
               { authMode: 'userPool' }
             );
           }

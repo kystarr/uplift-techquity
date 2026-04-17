@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { amplifyDataClient } from '@/amplifyDataClient';
+import { withDataAuthModeFallback } from '@/lib/data-query-auth-fallback';
 
 export type FlagStatus = 'PENDING' | 'REVIEWED' | 'DISMISSED' | 'ACTION_TAKEN' | 'RESOLVED';
 
@@ -49,12 +50,10 @@ export function useAdminFlags(): UseAdminFlagsResult {
     setLoading(true);
     setError(null);
     try {
-      const res = await amplifyDataClient.queries.listFlagsForAdmin(
-        { status: 'ALL' },
-        { authMode: 'userPool' }
+      const { data: raw } = await withDataAuthModeFallback<Record<string, unknown>>(
+        'Flags',
+        (authMode) => amplifyDataClient.queries.listFlagsForAdmin({ status: 'ALL' }, { authMode })
       );
-
-      const raw = Array.isArray(res.data) ? res.data : [];
       const items: FlagItem[] = raw
         .map((f: Record<string, unknown>): FlagItem => ({
           id: String(f.id),

@@ -2,160 +2,127 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ==========================================================================
-   Design system: semantic color tokens
-   ==========================================================================
-   All colors are HSL (space-separated H S% L%) for hsl(var(--token)).
-   Components must reference these tokens only — do not hardcode palette colors.
-
-   Token mapping:
-   - background     → gray/blue 50 (page canvas)
-   - surface/card   → white-ish 100 (cards, panels; keep light and neutral)
-   - primary        → blue C200 (buttons, actions, links)
-   - defaultHeading → neutral dark (default heading/text color; interface mostly neutral)
-   - accentHeading  → purple (emphasis headings, featured labels, highlight text only)
-   - success        → green (trust badges, success states only)
-
-   Rules: Interface mostly neutral. Headings default to neutral; purple only for intentional emphasis.
-   Green = trust/success only. Controlled color accents.
-   ========================================================================== */
-
 @layer base {
   :root {
-    /* -----------------------------------------------------------------------
-       background — Page canvas. Use for main page and neutral areas.
-       Maps to: gray/blue 50. Keep surfaces light and neutral.
-       ----------------------------------------------------------------------- */
-    --background: 214 32% 97%;
-    --foreground: 222 18% 11%;
-
-    /* -----------------------------------------------------------------------
-       surface (cards) — Elevated panels: cards, popovers, modals.
-       Maps to: white-ish 100. Do not use for large purple/blue areas.
-       ----------------------------------------------------------------------- */
+    --background: 216 38% 97%;
+    --foreground: 220 26% 12%;
     --surface: 0 0% 100%;
     --card: 0 0% 100%;
-    --card-foreground: 222 18% 11%;
+    --card-foreground: 220 26% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 18% 11%;
+    --popover-foreground: 220 26% 12%;
 
-    /* -----------------------------------------------------------------------
-       primary — Core actions: primary buttons, key links, navigation emphasis.
-       Maps to: blue C200. Use for interactive emphasis, not large backgrounds.
-       ----------------------------------------------------------------------- */
-    --primary: 212 76% 79%;
-    --primary-foreground: 222 18% 11%;
-    --primary-hover: 212 73% 75%;
+    --primary: 214 51% 79%;
+    --primary-foreground: 220 37% 15%;
+    --primary-hover: 214 49% 73%;
+    --primary-light: 214 52% 93%;
 
-    /* -----------------------------------------------------------------------
-       secondary — Secondary UI: secondary buttons, subtle backgrounds.
-       Neutral, light. Not for trust or heading emphasis.
-       ----------------------------------------------------------------------- */
-    --secondary: 214 25% 91%;
-    --secondary-foreground: 222 18% 11%;
-    --secondary-hover: 214 25% 86%;
+    --secondary: 216 30% 93%;
+    --secondary-foreground: 220 26% 12%;
+    --secondary-hover: 216 30% 89%;
 
-    /* -----------------------------------------------------------------------
-       success — Trust and success only: verified badges, ratings, success states.
-       Maps to: green. Do not use for general accents or headings.
-       ----------------------------------------------------------------------- */
-    --success: 145 65% 45%;
-    --success-foreground: 0 0% 100%;
+    --success: 120 100% 80%;
+    --success-foreground: 220 37% 15%;
 
-    /* -----------------------------------------------------------------------
-       muted — Low-emphasis UI: secondary text, placeholders, disabled states.
-       ----------------------------------------------------------------------- */
-    --muted: 214 20% 95%;
-    --muted-foreground: 211 24% 58%;
+    --muted: 216 28% 94%;
+    --muted-foreground: 217 15% 43%;
+    --default-heading: 220 26% 12%;
+    --accent-heading: 214 48% 30%;
+    --heading-accent: 214 48% 30%;
+    --accent: 214 38% 92%;
+    --accent-foreground: 220 26% 12%;
+    --accent-strong: 214 48% 30%;
 
-    /* -----------------------------------------------------------------------
-       defaultHeading — Default heading and title color. Neutral dark (black/gray).
-       Use for all headings unless emphasis is intended. Keeps UI mostly neutral.
-       ----------------------------------------------------------------------- */
-    --default-heading: 222 18% 11%;
-
-    /* -----------------------------------------------------------------------
-       accentHeading — Emphasis only: featured labels, highlight text, emphasis headings.
-       Maps to: purple. Use only where emphasis is intentional, not globally.
-       ----------------------------------------------------------------------- */
-    --accent-heading: 292 63% 42%;
-    --heading-accent: 292 63% 42%;   /* legacy alias */
-    --accent: 138 62% 77%;
-    --accent-foreground: 222 18% 11%;
-    --accent-strong: 292 63% 42%;   /* legacy alias for accentHeading */
-
-    /* -----------------------------------------------------------------------
-       destructive — Destructive actions, errors.
-       ----------------------------------------------------------------------- */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* -----------------------------------------------------------------------
-       border / input / ring — Borders, form edges, focus rings. Neutral.
-       ----------------------------------------------------------------------- */
-    --border: 211 22% 88%;
-    --input: 211 22% 88%;
-    --ring: 212 76% 79%;
+    --border: 214 23% 87%;
+    --input: 214 23% 87%;
+    --ring: 214 51% 79%;
 
-    --radius: 0.75rem;
+    --glass: 0 0% 100% / 0.68;
+    --glass-strong: 0 0% 100% / 0.82;
+    --glass-border: 0 0% 100% / 0.52;
+    --panel: 218 40% 98%;
+    --panel-foreground: 220 26% 12%;
 
-    /* Gradients: use semantic tokens; avoid large blue/purple blocks */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-hover)));
-    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-hover)));
-    --gradient-hero: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--surface)) 100%);
-    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(155 70% 50%));
+    --radius: 1rem;
+    --radius-lg: 1.25rem;
+    --radius-xl: 1.5rem;
+    --blur-glass: 14px;
+    --blur-heavy: 22px;
 
-    --shadow-sm: 0 1px 3px hsl(220 20% 50% / 0.06);
-    --shadow-md: 0 4px 12px hsl(220 20% 50% / 0.08);
-    --shadow-lg: 0 8px 24px hsl(220 20% 50% / 0.1);
-    --shadow-xl: 0 16px 40px hsl(220 20% 50% / 0.12);
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(214 59% 84%));
+    --gradient-secondary: linear-gradient(180deg, hsl(216 44% 99%), hsl(216 40% 95%));
+    --gradient-hero: radial-gradient(circle at 15% 12%, hsl(var(--primary-light)) 0%, transparent 42%),
+      radial-gradient(circle at 88% 7%, hsl(214 52% 86% / 0.36) 0%, transparent 32%),
+      linear-gradient(180deg, hsl(216 38% 98%) 0%, hsl(217 39% 95%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(120 100% 74%));
 
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-sm: 0 8px 22px hsl(220 40% 20% / 0.06);
+    --shadow-md: 0 14px 34px hsl(220 40% 20% / 0.08);
+    --shadow-lg: 0 20px 48px hsl(220 40% 20% / 0.1);
+    --shadow-xl: 0 28px 64px hsl(220 40% 20% / 0.12);
+    --shadow-glass: 0 14px 34px hsl(220 40% 20% / 0.08);
+
+    --transition-smooth: all 260ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* Dark mode: same semantic tokens, darker canvas */
   .dark {
-    --background: 222 18% 8%;
-    --foreground: 60 100% 99%;
+    --background: 223 44% 10%;
+    --foreground: 210 30% 96%;
+    --surface: 222 36% 13%;
+    --card: 222 37% 15%;
+    --card-foreground: 210 33% 98%;
+    --popover: 222 37% 15%;
+    --popover-foreground: 210 33% 98%;
 
-    --surface: 222 18% 11%;
-    --card: 222 18% 11%;
-    --card-foreground: 60 100% 99%;
-    --popover: 222 18% 11%;
-    --popover-foreground: 60 100% 99%;
+    --primary: 214 51% 79%;
+    --primary-foreground: 222 36% 16%;
+    --primary-hover: 214 55% 85%;
+    --primary-light: 214 51% 79% / 0.2;
 
-    --primary: 212 76% 79%;
-    --primary-foreground: 222 18% 11%;
-    --primary-hover: 212 73% 75%;
+    --secondary: 222 28% 21%;
+    --secondary-foreground: 210 33% 98%;
+    --secondary-hover: 222 28% 26%;
 
-    --secondary: 45 95% 60%;
-    --secondary-foreground: 222 18% 11%;
-    --secondary-hover: 45 95% 65%;
+    --success: 120 100% 80%;
+    --success-foreground: 220 37% 15%;
 
-    --success: 145 65% 50%;
-    --success-foreground: 0 0% 100%;
+    --muted: 222 25% 19%;
+    --muted-foreground: 215 17% 70%;
 
-    --muted: 211 22% 18%;
-    --muted-foreground: 211 24% 58%;
-
-    --default-heading: 214 20% 98%;
-    --accent-heading: 292 63% 42%;
-    --heading-accent: 292 63% 42%;
-    --accent: 138 62% 77%;
-    --accent-foreground: 222 18% 11%;
-    --accent-strong: 292 63% 42%;
+    --default-heading: 210 33% 98%;
+    --accent-heading: 214 74% 86%;
+    --heading-accent: 214 74% 86%;
+    --accent: 222 30% 23%;
+    --accent-foreground: 210 33% 98%;
+    --accent-strong: 214 74% 86%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 211 22% 25%;
-    --input: 211 22% 25%;
-    --ring: 212 76% 79%;
+    --border: 220 28% 26%;
+    --input: 220 28% 26%;
+    --ring: 214 51% 79%;
 
-    --shadow-sm: 0 2px 8px hsl(0 0% 0% / 0.3);
-    --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.4);
-    --shadow-lg: 0 8px 32px hsl(0 0% 0% / 0.5);
-    --shadow-xl: 0 16px 48px hsl(0 0% 0% / 0.6);
+    --glass: 222 35% 18% / 0.62;
+    --glass-strong: 222 36% 21% / 0.8;
+    --glass-border: 214 36% 70% / 0.18;
+    --panel: 222 34% 17%;
+    --panel-foreground: 210 33% 98%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(214 50% 70%), hsl(214 56% 82%));
+    --gradient-secondary: linear-gradient(180deg, hsl(223 34% 16%), hsl(223 30% 13%));
+    --gradient-hero: radial-gradient(circle at 15% 12%, hsl(214 50% 72% / 0.22) 0%, transparent 45%),
+      radial-gradient(circle at 88% 7%, hsl(214 58% 72% / 0.18) 0%, transparent 36%),
+      linear-gradient(180deg, hsl(223 40% 12%) 0%, hsl(223 42% 9%) 100%);
+
+    --shadow-sm: 0 10px 22px hsl(0 0% 0% / 0.32);
+    --shadow-md: 0 14px 32px hsl(0 0% 0% / 0.42);
+    --shadow-lg: 0 18px 42px hsl(0 0% 0% / 0.48);
+    --shadow-xl: 0 24px 52px hsl(0 0% 0% / 0.56);
+    --shadow-glass: 0 14px 32px hsl(0 0% 0% / 0.42);
   }
 }
 
@@ -165,11 +132,50 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image: var(--gradient-hero);
+    background-attachment: fixed;
+    transition: background-color 260ms ease, color 260ms ease;
   }
 
-  /* Headings default to neutral; use accentHeading only for intentional emphasis */
   h1, h2, h3, h4, h5, h6 {
     color: hsl(var(--default-heading));
+  }
+
+  html,
+  body,
+  [class*="bg-"],
+  [class*="text-"],
+  [class*="border-"] {
+    transition:
+      background-color 260ms ease,
+      border-color 260ms ease,
+      color 260ms ease,
+      box-shadow 260ms ease,
+      transform 260ms ease;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: hsl(var(--glass));
+    backdrop-filter: blur(var(--blur-glass));
+    -webkit-backdrop-filter: blur(var(--blur-glass));
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-panel-strong {
+    background: hsl(var(--glass-strong));
+    backdrop-filter: blur(var(--blur-heavy));
+    -webkit-backdrop-filter: blur(var(--blur-heavy));
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--shadow-lg);
+  }
+
+  .floating-surface {
+    background: hsl(var(--surface) / 0.92);
+    border: 1px solid hsl(var(--border) / 0.85);
+    box-shadow: var(--shadow-md);
   }
 }

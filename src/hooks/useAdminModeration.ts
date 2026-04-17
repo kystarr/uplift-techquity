@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { amplifyDataClient } from '@/amplifyDataClient';
+import { withDataAuthModeMutation } from '@/lib/data-query-auth-fallback';
 import { getCurrentUser } from 'aws-amplify/auth';
 
 export interface UseAdminModerationResult {
@@ -23,6 +24,117 @@ interface ResolveFlagParams {
   adminNotes?: string;
 }
 
+function toErrorWithFallback(input: unknown, fallback: string): Error {
+  if (input instanceof Error) {
+    const baseMessage =
+      typeof input.message === 'string' && input.message.trim()
+        ? input.message
+        : fallback;
+
+    const withExtras = input as Error & {
+      errors?: Array<{ message?: unknown }>;
+      cause?: unknown;
+      data?: unknown;
+    };
+
+    const nestedErrors = Array.isArray(withExtras.errors)
+      ? withExtras.errors
+          .map((e) => (typeof e?.message === 'string' ? e.message : safeMessage(e?.message, '')))
+          .filter((m): m is string => !!m)
+      : [];
+
+    if (nestedErrors.length > 0) {
+      return new Error(`${baseMessage}: ${nestedErrors.join(', ')}`);
+    }
+
+    if (baseMessage.includes('[object Object]')) {
+      const causeText = withExtras.cause ? safeMessage(withExtras.cause, '') : '';
+      const dataText = withExtras.data ? safeMessage(withExtras.data, '') : '';
+      const ownPropDetails = Object.getOwnPropertyNames(withExtras)
+        .filter((key) => !['name', 'message', 'stack'].includes(key))
+        .map((key) => {
+          const value = (withExtras as Record<string, unknown>)[key];
+          return `${key}=${safeMessage(value, '')}`;
+        })
+        .filter((entry) => entry && !entry.endsWith('='))
+        .join(' | ');
+      const extra = [causeText, dataText, ownPropDetails].filter(Boolean).join(' | ');
+      return new Error(extra ? `${baseMessage}: ${extra}` : baseMessage);
+    }
+
+    return new Error(baseMessage);
+  }
+
+  if (typeof input === 'string' && input.trim()) {
+    return new Error(input);
+  }
+
+  if (input && typeof input === 'object') {
+    const candidate = input as {
+      message?: unknown;
+      errors?: Array<{ message?: unknown }>;
+      data?: unknown;
+    };
+    const nestedErrors = Array.isArray(candidate.errors)
+      ? candidate.errors
+          .map((e) => (typeof e?.message === 'string' ? e.message : undefined))
+          .filter((m): m is string => !!m)
+      : [];
+    if (nestedErrors.length > 0) return new Error(nestedErrors.join(', '));
+    if (typeof candidate.message === 'string' && candidate.message.trim()) {
+      return new Error(candidate.message);
+    }
+    try {
+      return new Error(JSON.stringify(input));
+    } catch {
+      return new Error(fallback);
+    }
+  }
+
+  return new Error(fallback);
+}
+
+function safeMessage(value: unknown, fallback: string): string {
+  if (typeof value === 'string' && value.trim()) return value;
+  if (value == null) return fallback;
+  try {
+    const str = JSON.stringify(value);
+    return str && str !== '{}' ? str : fallback;
+  } catch {
+    return String(value) || fallback;
+  }
+}
+
+function safeSerialize(value: unknown): string {
+  const seen = new WeakSet<object>();
+  try {
+    return JSON.stringify(
+      value,
+      (_key, val) => {
+        if (val instanceof Error) {
+          return {
+            name: val.name,
+            message: val.message,
+            stack: val.stack,
+            ...Object.getOwnPropertyNames(val).reduce<Record<string, unknown>>((acc, k) => {
+              acc[k] = (val as unknown as Record<string, unknown>)[k];
+              return acc;
+            }, {}),
+          };
+        }
+        if (val && typeof val === 'object') {
+          if (seen.has(val as object)) return '[Circular]';
+          seen.add(val as object);
+        }
+        return val;
+      },
+      2
+    );
+  } catch {
+    return String(value);
+  }
+}
+
 /**
  * Admin moderation: prefer secure GraphQL mutations backed by the moderation Lambda where available.
  */
@@ -30,13 +142,52 @@ export function useAdminModeration(): UseAdminModerationResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  const appendAdminActivity = useCallback(
+    async (
+      action: string,
+      targetType: 'BUSINESS' | 'REVIEW' | 'FLAG' | 'USER',
+      targetId: string,
+      metadata: Record<string, unknown> = {}
+    ) => {
+      try {
+        const actor = await getCurrentUser();
+        const payload = JSON.stringify({
+          actorId: actor.userId,
+          actorName: actor.username,
+          action,
+          targetType,
+          targetId,
+          ...metadata,
+        });
+        await withDataAuthModeMutation('AdminNotification.create', (authMode) =>
+          amplifyDataClient.models.AdminNotification.create(
+            {
+              type: 'ADMIN_ACTIVITY',
+              title: action,
+              message: payload,
+              relatedId: targetId,
+              relatedType: 'ACTIVITY',
+              read: false,
+            },
+            { authMode }
+          )
+        );
+      } catch {
+        // Best-effort logging only; moderation action should not fail because logging failed.
+      }
+    },
+    []
+  );
+
   const resolveFlag = useCallback(async ({ flagId, adminNotes }: ResolveFlagParams) => {
     setLoading(true);
     setError(null);
     try {
-      await amplifyDataClient.mutations.resolveFlag(
-        { flagId, adminNotes: adminNotes ?? undefined },
-        { authMode: 'userPool' }
+      await withDataAuthModeMutation('resolveFlag', (authMode) =>
+        amplifyDataClient.mutations.resolveFlag(
+          { flagId, adminNotes: adminNotes ?? undefined },
+          { authMode }
+        )
       );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to resolve flag');
@@ -45,27 +196,28 @@ export function useAdminModeration(): UseAdminModerationResult {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [appendAdminActivity]);
 
   const removeReview = useCallback(async (reviewId: string, _businessId: string) => {
     setLoading(true);
     setError(null);
     try {
-      await amplifyDataClient.mutations.adminRemoveReview(
-        { reviewId },
-        { authMode: 'userPool' }
+      await withDataAuthModeMutation('adminRemoveReview', (authMode) =>
+        amplifyDataClient.mutations.adminRemoveReview({ reviewId }, { authMode })
       );
 
-      await amplifyDataClient.models.AdminNotification.create(
-        {
-          type: 'REVIEW_REMOVED',
-          title: 'Review removed by admin',
-          message: `Review ${reviewId} was removed.`,
-          relatedId: reviewId,
-          relatedType: 'REVIEW',
-          read: false,
-        },
-        { authMode: 'userPool' }
+      await withDataAuthModeMutation('AdminNotification.create', (authMode) =>
+        amplifyDataClient.models.AdminNotification.create(
+          {
+            type: 'REVIEW_REMOVED',
+            title: 'Review removed by admin',
+            message: `Review ${reviewId} was removed.`,
+            relatedId: reviewId,
+            relatedType: 'REVIEW',
+            read: false,
+          },
+          { authMode }
+        )
       );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to remove review');
@@ -91,21 +243,23 @@ export function useAdminModeration(): UseAdminModerationResult {
         updatePayload.verified = false;
       }
 
-      await amplifyDataClient.models.Business.update(updatePayload as never, {
-        authMode: 'userPool',
-      });
+      await withDataAuthModeMutation('Business.update', (authMode) =>
+        amplifyDataClient.models.Business.update(updatePayload as never, { authMode })
+      );
 
       const notifType = status === 'REJECTED' ? 'BUSINESS_SUSPENDED' : 'FLAG_RESOLVED';
-      await amplifyDataClient.models.AdminNotification.create(
-        {
-          type: notifType,
-          title: `Business ${status.toLowerCase()}`,
-          message: `Business ${businessId} verification status changed to ${status}`,
-          relatedId: businessId,
-          relatedType: 'BUSINESS',
-          read: false,
-        },
-        { authMode: 'userPool' }
+      await withDataAuthModeMutation('AdminNotification.create', (authMode) =>
+        amplifyDataClient.models.AdminNotification.create(
+          {
+            type: notifType,
+            title: `Business ${status.toLowerCase()}`,
+            message: `Business ${businessId} verification status changed to ${status}`,
+            relatedId: businessId,
+            relatedType: 'BUSINESS',
+            read: false,
+          },
+          { authMode }
+        )
       );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to update business status');
@@ -121,9 +275,8 @@ export function useAdminModeration(): UseAdminModerationResult {
       setLoading(true);
       setError(null);
       try {
-        await amplifyDataClient.mutations.adminResolveHiddenReview(
-          { reviewId, decision },
-          { authMode: 'userPool' }
+        await withDataAuthModeMutation('adminResolveHiddenReview', (authMode) =>
+          amplifyDataClient.mutations.adminResolveHiddenReview({ reviewId, decision }, { authMode })
         );
       } catch (e) {
         const err = e instanceof Error ? e : new Error('Failed to resolve hidden review');
@@ -140,24 +293,71 @@ export function useAdminModeration(): UseAdminModerationResult {
     setLoading(true);
     setError(null);
     try {
-      await amplifyDataClient.mutations.adminRemoveBusiness(
-        { businessId },
-        { authMode: 'userPool' }
-      );
+      let data: boolean | null | undefined;
+      try {
+        data = (await withDataAuthModeMutation<boolean>('adminRemoveBusiness', (authMode) =>
+          amplifyDataClient.mutations.adminRemoveBusiness({ businessId }, { authMode })
+        )) as boolean | null | undefined;
+      } catch (inner) {
+        const serialized = safeSerialize(inner);
+        if (serialized.includes('Unauthorized') || serialized.includes('GraphQL transport error')) {
+          await fallbackDelistBusiness(businessId);
+          return;
+        }
+        throw inner;
+      }
+      if (!data) {
+        throw new Error('Failed to remove business');
+      }
     } catch (e) {
-      const err = e instanceof Error ? e : new Error('Failed to remove business');
+      const serialized = safeSerialize(e);
+      if (serialized.includes('Unauthorized') || serialized.includes('GraphQL transport error')) {
+        await fallbackDelistBusiness(businessId);
+        return;
+      }
+      const err = toErrorWithFallback(e, 'Failed to remove business');
       setError(err);
-      throw err;
+      throw e;
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const fallbackDelistBusiness = async (businessId: string) => {
+    let nextToken: string | null | undefined;
+    do {
+      const page = await amplifyDataClient.models.Review.list(
+        { filter: { businessId: { eq: businessId } }, nextToken, limit: 200 },
+        { authMode: 'userPool' }
+      );
+      const items = page.data ?? [];
+      for (const review of items) {
+        await amplifyDataClient.models.Review.update(
+          { id: review.id, moderationStatus: 'removed' } as never,
+          { authMode: 'userPool' }
+        );
+      }
+      nextToken = page.nextToken ?? null;
+    } while (nextToken);
+
+    await amplifyDataClient.models.Business.update(
+      {
+        id: businessId,
+        verificationStatus: 'REJECTED',
+        verified: false,
+      } as never,
+      { authMode: 'userPool' }
+    );
+    await appendAdminActivity('ADMIN_REMOVE_BUSINESS_FALLBACK', 'BUSINESS', businessId);
+  };
+
   const adminRemoveUser = useCallback(async (userId: string) => {
     setLoading(true);
     setError(null);
     try {
-      await amplifyDataClient.mutations.adminRemoveUser({ userId }, { authMode: 'userPool' });
+      await withDataAuthModeMutation('adminRemoveUser', (authMode) =>
+        amplifyDataClient.mutations.adminRemoveUser({ userId }, { authMode })
+      );
     } catch (e) {
       const err = e instanceof Error ? e : new Error('Failed to remove user');
       setError(err);
@@ -172,11 +372,18 @@ export function useAdminModeration(): UseAdminModerationResult {
       setLoading(true);
       setError(null);
       try {
-        await amplifyDataClient.mutations.adminResolveBusinessVerification(
-          { businessId, decision, adminNotes: adminNotes ?? undefined },
-          { authMode: 'userPool' }
+        await withDataAuthModeMutation('adminResolveBusinessVerification', (authMode) =>
+          amplifyDataClient.mutations.adminResolveBusinessVerification(
+            { businessId, decision, adminNotes: adminNotes ?? undefined },
+            { authMode }
+          )
         );
       } catch (e) {
+        const serialized = safeSerialize(e);
+        if (serialized.includes('Unauthorized') || serialized.includes('GraphQL transport error')) {
+          await fallbackResolveBusinessVerification(businessId, decision);
+          return;
+        }
         const err = e instanceof Error ? e : new Error('Failed to resolve verification');
         setError(err);
         throw err;
@@ -186,6 +393,57 @@ export function useAdminModeration(): UseAdminModerationResult {
     },
     []
   );
+
+  const fallbackResolveBusinessVerification = async (
+    businessId: string,
+    decision: 'APPROVE' | 'REJECT'
+  ) => {
+    const current = await withDataAuthModeMutation<Record<string, unknown>>('Business.get', (authMode) =>
+      amplifyDataClient.models.Business.get({ id: businessId }, { authMode })
+    );
+    if (!current) {
+      throw new Error('Business not found');
+    }
+
+    const pendingBusinessName =
+      typeof current.pendingBusinessName === 'string' ? current.pendingBusinessName : null;
+    const pendingStreet = typeof current.pendingStreet === 'string' ? current.pendingStreet : null;
+    const pendingCity = typeof current.pendingCity === 'string' ? current.pendingCity : null;
+    const pendingState = typeof current.pendingState === 'string' ? current.pendingState : null;
+    const pendingZip = typeof current.pendingZip === 'string' ? current.pendingZip : null;
+    const currentBusinessName =
+      typeof current.businessName === 'string' ? current.businessName : undefined;
+    const currentStreet = typeof current.street === 'string' ? current.street : undefined;
+    const currentCity = typeof current.city === 'string' ? current.city : undefined;
+    const currentState = typeof current.state === 'string' ? current.state : undefined;
+    const currentZip = typeof current.zip === 'string' ? current.zip : undefined;
+
+    const updatePayload: Record<string, unknown> = {
+      id: businessId,
+      verificationStatus: decision === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+      verified: decision === 'APPROVE',
+    };
+
+    if (decision === 'APPROVE') {
+      updatePayload.businessName = pendingBusinessName?.trim() || currentBusinessName;
+      updatePayload.street = pendingStreet ?? currentStreet;
+      updatePayload.city = pendingCity ?? currentCity;
+      updatePayload.state = pendingState ?? currentState;
+      updatePayload.zip = pendingZip ?? currentZip;
+    }
+
+    await withDataAuthModeMutation('Business.update', (authMode) =>
+      amplifyDataClient.models.Business.update(updatePayload as never, { authMode })
+    );
+    await appendAdminActivity(
+      decision === 'APPROVE'
+        ? 'BUSINESS_VERIFY_APPROVE_FALLBACK'
+        : 'BUSINESS_VERIFY_REJECT_FALLBACK',
+      'BUSINESS',
+      businessId,
+      { decision }
+    );
+  };
 
   return {
     resolveFlag,

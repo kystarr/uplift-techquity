@@ -1,0 +1,95 @@
+%% Uplift — logical data model (Amplify Data → DynamoDB tables)
+%% Auth: passwords in Amazon Cognito, not in User.
+%% No Analytics table; metrics derived from Review/Business in-app.
+
+erDiagram
+  USER {
+    string id PK
+    string email
+    string name
+    string role
+    string avatarUrl
+  }
+
+  BUSINESS {
+    string id PK
+    string ownerId FK
+    string businessName
+    string contactEmail
+    string verificationStatus
+    boolean verified
+    float latitude
+    float longitude
+    float averageRating
+    int reviewCount
+    int flagCount
+  }
+
+  REVIEW {
+    string id PK
+    string businessId FK
+    string authorId FK
+    string authorName
+    float rating
+    string text
+    string moderationStatus
+    int flagCount
+  }
+
+  FAVORITE {
+    string id PK
+    string businessId FK
+    string businessName
+    float businessRating
+    boolean businessVerified
+  }
+
+  CONVERSATION {
+    string id PK
+    string participantId FK
+    string businessId FK
+    string lastMessage
+    datetime lastMessageTimestamp
+    int unreadCount
+    int businessUnreadCount
+  }
+
+  MESSAGE {
+    string id PK
+    string conversationId FK
+    string senderId FK
+    string senderName
+    string text
+    string attachmentUrl
+  }
+
+  FLAG {
+    string id PK
+    string targetType
+    string targetId
+    string reason
+    string status
+    string reporterId FK
+  }
+
+  ADMIN_NOTIFICATION {
+    string id PK
+    string type
+    string title
+    string message
+    string relatedId
+    string relatedType
+    boolean read
+  }
+
+  USER ||--o{ BUSINESS : "ownerId"
+  USER ||--o{ REVIEW : "authorId"
+  BUSINESS ||--o{ REVIEW : "businessId"
+  USER ||--o{ FAVORITE : "owner"
+  BUSINESS ||--o{ FAVORITE : "businessId"
+  USER ||--o{ CONVERSATION : "participantId"
+  BUSINESS ||--o{ CONVERSATION : "businessId"
+  CONVERSATION ||--o{ MESSAGE : "conversationId"
+  USER ||--o{ FLAG : "reporterId"
+  REVIEW ||--o{ FLAG : "targetId if REVIEW"
+  BUSINESS ||--o{ FLAG : "targetId if BUSINESS"

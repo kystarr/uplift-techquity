@@ -13,6 +13,7 @@
     "backend:sandbox": "ampx sandbox",
     "backend:sandbox:once": "ampx sandbox --once",
     "backend:sandbox:hgoll": "ampx sandbox --identifier hgoll",
+    "backend:sandbox:hgoll:once": "ampx sandbox --identifier hgoll --once",
     "backend:sandbox:darius": "ampx sandbox --identifier dariusvalere"
   },
   "dependencies": {

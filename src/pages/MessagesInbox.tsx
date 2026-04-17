@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Navigation } from "@/components/Navigation";
 import { useMessages } from "@/hooks/useMessages";
 import { DeleteConversationForMeDialog } from "@/components/messaging/DeleteConversationForMeDialog";
 import { ConversationChatMenu } from "@/components/messaging/ConversationChatMenu";
@@ -67,8 +66,7 @@ const MessagesInbox = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <div className="bg-background">
       <DeleteConversationForMeDialog
         open={deleteTargetId !== null}
         onOpenChange={(open) => {
@@ -98,7 +96,7 @@ const MessagesInbox = () => {
             <p className="text-muted-foreground">
               {isBusiness
                 ? "Reply to customers who messaged your business."
-                : "Chat with businesses you&apos;re interested in."}
+                : "Chat with businesses you're interested in."}
             </p>
             {typeof Notification !== "undefined" && Notification.permission === "granted" && (
               <p className="text-xs text-muted-foreground mt-2">Desktop notifications are enabled.</p>
