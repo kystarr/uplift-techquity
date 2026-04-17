@@ -16,6 +16,7 @@ import { BusinessContactCard } from "./BusinessContactCard";
 import { BusinessGallery } from "./BusinessGallery";
 import { ReviewsPreview } from "./ReviewsPreview";
 import { ReviewForm } from "./ReviewForm";
+import { ShareBusinessMenu } from "./ShareBusinessMenu";
 import type { Business } from "@/types/business";
 import type { ReviewPreviewItem } from "./ReviewsPreview";
 import { cn } from "@/lib/utils";
