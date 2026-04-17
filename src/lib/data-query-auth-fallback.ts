@@ -1,6 +1,6 @@
 import { fetchAuthSession } from "aws-amplify/auth";
 
-const AUTH_MODES = ["userPool", "iam"] as const;
+const AUTH_MODES = ["userPool", "identityPool", "iam"] as const;
 
 export type DataClientAuthMode = (typeof AUTH_MODES)[number];
 
