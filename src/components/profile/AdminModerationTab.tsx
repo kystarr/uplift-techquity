@@ -69,7 +69,7 @@ export function AdminModerationTab() {
     setPendingLoading(true);
     setActivityLoading(true);
     try {
-      const [h, p, a] = await Promise.all([
+      const [hiddenResult, pendingResult, activityResult] = await Promise.allSettled([
         withDataAuthModeFallback<HiddenQueueRow>("Hidden reviews", (authMode) =>
           amplifyDataClient.queries.listHiddenReviewsForAdmin({}, { authMode })
         ),
@@ -80,11 +80,44 @@ export function AdminModerationTab() {
           amplifyDataClient.queries.listAdminActivityLog({}, { authMode })
         ),
       ]);
-      setHidden(h.data);
-      setPendingBiz(p.data);
-      setActivity(a.data);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load admin queues");
+
+      if (hiddenResult.status === "fulfilled") {
+        setHidden(hiddenResult.value.data);
+        console.info("[AdminModerationTab] Hidden reviews loaded", {
+          authModeUsed: hiddenResult.value.authModeUsed,
+          count: hiddenResult.value.data.length,
+        });
+      } else {
+        console.error("[AdminModerationTab] Hidden reviews failed", hiddenResult.reason);
+      }
+
+      if (pendingResult.status === "fulfilled") {
+        setPendingBiz(pendingResult.value.data);
+        console.info("[AdminModerationTab] Pending verification loaded", {
+          authModeUsed: pendingResult.value.authModeUsed,
+          count: pendingResult.value.data.length,
+        });
+      } else {
+        console.error("[AdminModerationTab] Pending verification failed", pendingResult.reason);
+      }
+
+      if (activityResult.status === "fulfilled") {
+        setActivity(activityResult.value.data);
+        console.info("[AdminModerationTab] Activity log loaded", {
+          authModeUsed: activityResult.value.authModeUsed,
+          count: activityResult.value.data.length,
+        });
+      } else {
+        console.error("[AdminModerationTab] Activity log failed", activityResult.reason);
+      }
+
+      if (
+        hiddenResult.status === "rejected" ||
+        pendingResult.status === "rejected" ||
+        activityResult.status === "rejected"
+      ) {
+        toast.error("One or more admin queues failed. See browser console for auth mode details.");
+      }
     } finally {
       setHiddenLoading(false);
       setPendingLoading(false);
