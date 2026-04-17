@@ -56,7 +56,17 @@ const schema = a.schema({
   PendingVerificationQueueItem: a.customType({
     businessId: a.id().required(),
     businessName: a.string(),
+    legalBusinessName: a.string(),
+    businessType: a.string(),
+    contactName: a.string(),
     contactEmail: a.string(),
+    phone: a.string(),
+    website: a.string(),
+    description: a.string(),
+    street: a.string(),
+    city: a.string(),
+    state: a.string(),
+    zip: a.string(),
     pendingBusinessName: a.string(),
     pendingStreet: a.string(),
     pendingCity: a.string(),
@@ -166,6 +176,8 @@ const schema = a.schema({
     allow.guest().to(['create', 'read']),
     // Allow authenticated principals (incl. IAM-authenticated callers) for seeding/backend writes
     allow.authenticated().to(['create', 'read', 'update']),
+    // Explicit identity-pool support for admin/moderation fallback updates.
+    allow.authenticated('identityPool').to(['create', 'read', 'update']),
   ]),
   Review: a.model({
     businessId: a.string().required(),

@@ -46,6 +46,7 @@ export function useAdminNotifications(): UseAdminNotificationsResult {
       );
 
       const items: AdminNotificationItem[] = (rows ?? [])
+        .filter((n: Record<string, unknown>) => String(n.type ?? '') !== 'ADMIN_ACTIVITY')
         .map((n: any): AdminNotificationItem => ({
           id: n.id,
           type: n.type,

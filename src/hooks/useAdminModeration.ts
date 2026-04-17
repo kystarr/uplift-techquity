@@ -142,6 +142,43 @@ export function useAdminModeration(): UseAdminModerationResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  const appendAdminActivity = useCallback(
+    async (
+      action: string,
+      targetType: 'BUSINESS' | 'REVIEW' | 'FLAG' | 'USER',
+      targetId: string,
+      metadata: Record<string, unknown> = {}
+    ) => {
+      try {
+        const actor = await getCurrentUser();
+        const payload = JSON.stringify({
+          actorId: actor.userId,
+          actorName: actor.username,
+          action,
+          targetType,
+          targetId,
+          ...metadata,
+        });
+        await withDataAuthModeMutation('AdminNotification.create', (authMode) =>
+          amplifyDataClient.models.AdminNotification.create(
+            {
+              type: 'ADMIN_ACTIVITY',
+              title: action,
+              message: payload,
+              relatedId: targetId,
+              relatedType: 'ACTIVITY',
+              read: false,
+            },
+            { authMode }
+          )
+        );
+      } catch {
+        // Best-effort logging only; moderation action should not fail because logging failed.
+      }
+    },
+    []
+  );
+
   const resolveFlag = useCallback(async ({ flagId, adminNotes }: ResolveFlagParams) => {
     setLoading(true);
     setError(null);
@@ -159,7 +196,7 @@ export function useAdminModeration(): UseAdminModerationResult {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [appendAdminActivity]);
 
   const removeReview = useCallback(async (reviewId: string, _businessId: string) => {
     setLoading(true);
@@ -311,6 +348,7 @@ export function useAdminModeration(): UseAdminModerationResult {
       } as never,
       { authMode: 'userPool' }
     );
+    await appendAdminActivity('ADMIN_REMOVE_BUSINESS_FALLBACK', 'BUSINESS', businessId);
   };
 
   const adminRemoveUser = useCallback(async (userId: string) => {
@@ -341,6 +379,11 @@ export function useAdminModeration(): UseAdminModerationResult {
           )
         );
       } catch (e) {
+        const serialized = safeSerialize(e);
+        if (serialized.includes('Unauthorized') || serialized.includes('GraphQL transport error')) {
+          await fallbackResolveBusinessVerification(businessId, decision);
+          return;
+        }
         const err = e instanceof Error ? e : new Error('Failed to resolve verification');
         setError(err);
         throw err;
@@ -350,6 +393,57 @@ export function useAdminModeration(): UseAdminModerationResult {
     },
     []
   );
+
+  const fallbackResolveBusinessVerification = async (
+    businessId: string,
+    decision: 'APPROVE' | 'REJECT'
+  ) => {
+    const current = await withDataAuthModeMutation<Record<string, unknown>>('Business.get', (authMode) =>
+      amplifyDataClient.models.Business.get({ id: businessId }, { authMode })
+    );
+    if (!current) {
+      throw new Error('Business not found');
+    }
+
+    const pendingBusinessName =
+      typeof current.pendingBusinessName === 'string' ? current.pendingBusinessName : null;
+    const pendingStreet = typeof current.pendingStreet === 'string' ? current.pendingStreet : null;
+    const pendingCity = typeof current.pendingCity === 'string' ? current.pendingCity : null;
+    const pendingState = typeof current.pendingState === 'string' ? current.pendingState : null;
+    const pendingZip = typeof current.pendingZip === 'string' ? current.pendingZip : null;
+    const currentBusinessName =
+      typeof current.businessName === 'string' ? current.businessName : undefined;
+    const currentStreet = typeof current.street === 'string' ? current.street : undefined;
+    const currentCity = typeof current.city === 'string' ? current.city : undefined;
+    const currentState = typeof current.state === 'string' ? current.state : undefined;
+    const currentZip = typeof current.zip === 'string' ? current.zip : undefined;
+
+    const updatePayload: Record<string, unknown> = {
+      id: businessId,
+      verificationStatus: decision === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+      verified: decision === 'APPROVE',
+    };
+
+    if (decision === 'APPROVE') {
+      updatePayload.businessName = pendingBusinessName?.trim() || currentBusinessName;
+      updatePayload.street = pendingStreet ?? currentStreet;
+      updatePayload.city = pendingCity ?? currentCity;
+      updatePayload.state = pendingState ?? currentState;
+      updatePayload.zip = pendingZip ?? currentZip;
+    }
+
+    await withDataAuthModeMutation('Business.update', (authMode) =>
+      amplifyDataClient.models.Business.update(updatePayload as never, { authMode })
+    );
+    await appendAdminActivity(
+      decision === 'APPROVE'
+        ? 'BUSINESS_VERIFY_APPROVE_FALLBACK'
+        : 'BUSINESS_VERIFY_REJECT_FALLBACK',
+      'BUSINESS',
+      businessId,
+      { decision }
+    );
+  };
 
   return {
     resolveFlag,

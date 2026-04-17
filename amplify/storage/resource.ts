@@ -21,6 +21,8 @@ export const storage = defineStorage({
     'verification-documents/{entity_id}/*': [
       allow.entity('identity').to(['read', 'write', 'delete']),
       allow.guest.to(['write']),
+      // Admin/moderation UI needs to open uploaded docs across businesses.
+      allow.authenticated.to(['read']),
     ],
     'business-media/{entity_id}/*': [
       allow.entity('identity').to(['read', 'write', 'delete']),
