@@ -41,22 +41,33 @@ export async function withDataAuthModeFallback<T>(
   label: string,
   attempt: (authMode: DataClientAuthMode) => Promise<{ data?: unknown; errors?: readonly { message?: string }[] }>
 ): Promise<{ data: T[]; authModeUsed: DataClientAuthMode }> {
-  await fetchAuthSession({ forceRefresh: true });
+  const session = await fetchAuthSession({ forceRefresh: true });
+  const hasUserPoolTokens = Boolean(session.tokens?.idToken || session.tokens?.accessToken);
+  const hasIdentityPoolCreds = Boolean(session.credentials?.accessKeyId);
+  console.info(`[AuthFallback:${label}] session snapshot`, {
+    hasUserPoolTokens,
+    hasIdentityPoolCreds,
+    identityId: session.identityId ?? null,
+  });
   let lastFailure = "";
   for (let i = 0; i < AUTH_MODES.length; i++) {
     const authMode = AUTH_MODES[i];
     try {
+      console.info(`[AuthFallback:${label}] trying`, { authMode });
       const res = await attempt(authMode);
       if (res.errors?.length) {
         lastFailure = res.errors.map((e) => e.message ?? "").join("; ");
+        console.warn(`[AuthFallback:${label}] response errors`, { authMode, errors: res.errors });
         if (responseLooksLikeAuthFailure(res) && i < AUTH_MODES.length - 1) {
           continue;
         }
         throw new Error(lastFailure || `${label}: request failed`);
       }
+      console.info(`[AuthFallback:${label}] success`, { authMode });
       return { data: parseCustomQueryArray<T>(res.data), authModeUsed: authMode };
     } catch (e) {
       lastFailure = e instanceof Error ? e.message : String(e);
+      console.warn(`[AuthFallback:${label}] thrown error`, { authMode, error: lastFailure });
       if (thrownErrorLooksLikeAuthFailure(e) && i < AUTH_MODES.length - 1) {
         continue;
       }
@@ -71,22 +82,33 @@ export async function withDataAuthModeMutation<T>(
   label: string,
   attempt: (authMode: DataClientAuthMode) => Promise<{ data?: T | null; errors?: readonly { message?: string }[] }>
 ): Promise<T | null | undefined> {
-  await fetchAuthSession({ forceRefresh: true });
+  const session = await fetchAuthSession({ forceRefresh: true });
+  const hasUserPoolTokens = Boolean(session.tokens?.idToken || session.tokens?.accessToken);
+  const hasIdentityPoolCreds = Boolean(session.credentials?.accessKeyId);
+  console.info(`[AuthFallbackMutation:${label}] session snapshot`, {
+    hasUserPoolTokens,
+    hasIdentityPoolCreds,
+    identityId: session.identityId ?? null,
+  });
   let lastFailure = "";
   for (let i = 0; i < AUTH_MODES.length; i++) {
     const authMode = AUTH_MODES[i];
     try {
+      console.info(`[AuthFallbackMutation:${label}] trying`, { authMode });
       const res = await attempt(authMode);
       if (res.errors?.length) {
         lastFailure = res.errors.map((e) => e.message ?? "").join("; ");
+        console.warn(`[AuthFallbackMutation:${label}] response errors`, { authMode, errors: res.errors });
         if (responseLooksLikeAuthFailure(res) && i < AUTH_MODES.length - 1) {
           continue;
         }
         throw new Error(lastFailure || `${label}: request failed`);
       }
+      console.info(`[AuthFallbackMutation:${label}] success`, { authMode });
       return res.data ?? undefined;
     } catch (e) {
       lastFailure = e instanceof Error ? e.message : String(e);
+      console.warn(`[AuthFallbackMutation:${label}] thrown error`, { authMode, error: lastFailure });
       if (thrownErrorLooksLikeAuthFailure(e) && i < AUTH_MODES.length - 1) {
         continue;
       }
