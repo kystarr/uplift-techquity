@@ -6,75 +6,110 @@
 import { fetchAuthSession } from 'aws-amplify/auth';
 
 /**
- * Decodes a JWT token (without verification - just for inspection).
- * Returns the payload as an object.
+ * Cognito ID token payload structure.
+ * Fields marked optional depend on User Pool configuration.
  */
-function decodeJWT(token: string): Record<string, any> | null {
+export interface CognitoIdTokenClaims {
+  sub: string;
+  iss: string;
+  aud: string;
+  exp: number;
+  iat: number;
+  token_use: 'id' | 'access';
+  auth_time: number;
+  email?: string;
+  email_verified?: boolean;
+  'cognito:username'?: string;
+  'cognito:groups'?: string[];
+  'custom:role'?: string;
+  [key: string]: unknown;
+}
+
+export interface TokenVerificationResult {
+  hasCustomRole: boolean;
+  role: string | null;
+  tokenClaims: CognitoIdTokenClaims | null;
+  error?: string;
+}
+
+/**
+ * Decodes a JWT token payload without cryptographic verification.
+ * Only for client-side inspection of claims — signature validation
+ * is handled server-side by Amplify/Cognito.
+ */
+export function decodeJWT(token: string): CognitoIdTokenClaims | null {
+  if (!token || typeof token !== 'string') {
+    return null;
+  }
+
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return null;
+  }
+
   try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = parts[1];
-    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    return JSON.parse(decoded);
-  } catch (error) {
-    console.error('Failed to decode JWT:', error);
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = atob(base64);
+    return JSON.parse(decoded) as CognitoIdTokenClaims;
+  } catch {
     return null;
   }
 }
 
 /**
  * Verifies that the current user's ID token contains the custom:role attribute.
- * This is critical for Sprint 2 role-based features.
- * 
- * @returns Object with:
- *   - hasCustomRole: boolean - whether custom:role exists in token
- *   - role: string | null - the role value if present
- *   - tokenClaims: Record<string, any> | null - full decoded token payload for debugging
+ * Critical for Sprint 2 role-based features (BE-1.3).
  */
-export async function verifyCustomRoleInToken(): Promise<{
-  hasCustomRole: boolean;
-  role: string | null;
-  tokenClaims: Record<string, any> | null;
-}> {
+export async function verifyCustomRoleInToken(): Promise<TokenVerificationResult> {
   try {
     const session = await fetchAuthSession();
     const idToken = session.tokens?.idToken?.toString();
 
     if (!idToken) {
-      console.warn('No ID token found in session');
-      return { hasCustomRole: false, role: null, tokenClaims: null };
+      return {
+        hasCustomRole: false,
+        role: null,
+        tokenClaims: null,
+        error: 'No ID token found in session',
+      };
     }
 
     const claims = decodeJWT(idToken);
     if (!claims) {
-      console.warn('Failed to decode ID token');
-      return { hasCustomRole: false, role: null, tokenClaims: null };
+      return {
+        hasCustomRole: false,
+        role: null,
+        tokenClaims: null,
+        error: 'Failed to decode ID token',
+      };
     }
 
-    // Check for custom:role (Cognito custom attributes are prefixed with 'custom:')
-    const customRole = claims['custom:role'] || claims['custom_role'] || null;
-    const hasCustomRole = customRole !== null;
-
+    const customRole = claims['custom:role'] ?? null;
     return {
-      hasCustomRole,
+      hasCustomRole: customRole !== null,
       role: customRole,
       tokenClaims: claims,
     };
   } catch (error) {
-    console.error('Error verifying custom role in token:', error);
-    return { hasCustomRole: false, role: null, tokenClaims: null };
+    const message = error instanceof Error ? error.message : 'Unknown error verifying token';
+    return { hasCustomRole: false, role: null, tokenClaims: null, error: message };
   }
 }
 
 /**
- * Logs token claims to console for debugging.
- * Useful during development to verify what's in the token.
+ * Logs token claims to console for development debugging.
+ * No-ops in production builds to avoid leaking token data.
  */
 export async function logTokenClaims(): Promise<void> {
+  if (import.meta.env.PROD) return;
+
   const result = await verifyCustomRoleInToken();
-  console.group('🔐 Auth Token Verification (BE-1.3)');
+  console.group('Auth Token Verification (BE-1.3)');
   console.log('Has custom:role:', result.hasCustomRole);
   console.log('Role value:', result.role);
+  if (result.error) {
+    console.warn('Verification issue:', result.error);
+  }
   console.log('All token claims:', result.tokenClaims);
   console.groupEnd();
 }
